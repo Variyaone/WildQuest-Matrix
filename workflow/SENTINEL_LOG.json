@@ -1,0 +1,32 @@
+{
+  "version": "3.0",
+  "mode": "normal",
+  "last_heartbeat": "2026-03-16T08:57:00Z",
+  "deployed_at": "2026-03-12T14:23:00Z",
+  "last_heartbeat": "2026-03-17T19:48:00Z",
+  "stats": {
+    "total_heartbeats": 33,
+    "tasks_processed": 0,
+    "t0_discovered": 0,
+    "active_explorations": 0
+  },
+  "history": [
+    { "timestamp": "2026-03-12T14:51:00Z", "action": "cleanup_redundant_cron", "detail": "Removed sentinel_heartbeat.py crontab entry (OpenClaw has built-in heartbeat)" },
+    { "timestamp": "2026-03-12T23:39:20Z", "action": "restored_scripts", "detail": "Restored missing scripts (data_update_v2.py, daily_master.py) from archive" },
+    { "timestamp": "2026-03-13T02:29:00Z", "action": "user_request_maintenance", "detail": "A股项目正在用其他IDE更新，用户要求暂停所有相关任务和心跳监控" },
+    { "timestamp": "2026-03-13T07:12:00Z", "action": "resumed_for_task_split_test", "detail": "用户要求测试Sentinel任务拆分，切换回normal模式" },
+    { "timestamp": "2026-03-13T08:39:00Z", "action": "task_split_test_completed", "detail": "TASK-001拆分测试完成，7个子任务已生成，切回maintenance模式等待用户通知" },
+    { "timestamp": "2026-03-16T06:33:00Z", "action": "mode_switch_to_normal", "detail": "用户通过Control UI切换模式为normal，恢复心跳监控" },
+    { "timestamp": "2026-03-16T08:25:00Z", "action": "heartbeat_check", "detail": "心跳检查：系统正常，任务池空，因子池正常(4个激活)" },
+    { "timestamp": "2026-03-16T08:35:00Z", "action": "heartbeat_check", "detail": "心跳检查：系统正常，任务池空" },
+    { "timestamp": "2026-03-16T08:45:00Z", "action": "heartbeat_check", "detail": "心跳检查：系统正常，任务池空" },
+    { "timestamp": "2026-03-16T08:57:00Z", "action": "heartbeat_check", "detail": "心跳检查：系统正常，任务池空，因子池正常，无异常" },
+    { "timestamp": "2026-03-16T12:06:00Z", "action": "heartbeat_check", "detail": "心跳检查：系统正常，任务池空，A股项目暂停维护中" },
+    { "timestamp": "2026-03-16T16:42:00Z", "action": "heartbeat_check", "detail": "心跳检查：系统正常，任务池空，A股项目暂停维护中，无异常" },
+    { "timestamp": "2026-03-16T17:16:00Z", "action": "heartbeat_check", "detail": "心跳检查：系统正常，任务池空，A股项目暂停维护中，无T0任务，无事需关注" },
+    { "timestamp": "2026-03-18T10:07:00Z", "action": "heartbeat_check", "detail": "心跳检查：系统正常，任务池空，A股v6.2运行中，数据已更新(15:15)，因子已更新(15:51)，3只模拟持仓，无异常" }
+  ]
+}
+ "timestamp": "2026-03-18T16:49:00Z", "action": "system_update", "detail": "T0级更新：评审官agent新增git提交作为任务完成标志，workflow/README新增任务原子化分解原则，严格强制git commit为完成证明" }
+  ]
+}
