@@ -1,15 +1,25 @@
 {
   "version": "3.0",
   "mode": "normal",
-  "last_heartbeat": "2026-03-19T04:19:00Z",
+  "last_heartbeat": "2026-03-19T08:19:00Z",
   "deployed_at": "2026-03-12T14:23:00Z",
   "stats": {
-    "total_heartbeats": 56,
+    "total_heartbeats": 60,
     "tasks_processed": 4,
     "t0_discovered": 0,
     "active_explorations": 0
   },
   "history": [
+    {
+      "timestamp": "2026-03-19T05:46:00Z",
+      "action": "heartbeat_check",
+      "detail": "心跳检查：系统正常，任务池有P3复盘任务(TASK-20260319-005)，A股v6.2数据fresh(03:01)，存储74GB可用(83%)。无异常，无需通知。"
+    },
+    {
+      "timestamp": "2026-03-19T04:29:00Z",
+      "action": "heartbeat_check",
+      "detail": "心跳检查：系统正常，任务池有P3复盘任务(TASK-20260319-005)，A股v6.2数据fresh(03:01)，存储74GB可用(83%)。无异常，无需通知。"
+    },
     {
       "timestamp": "2026-03-19T04:19:00Z",
       "action": "heartbeat_check",
