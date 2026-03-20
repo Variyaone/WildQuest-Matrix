@@ -46,7 +46,7 @@
 **执行者**: 小龙虾
 **创建时间**: 2026-03-19T03:35:00Z
 **完成时间:** 2026-03-19T03:36:00Z
-**实际耗时**: 1m24s
+**实际耗时:** 1m24s
 
 ### 执行过程摘要
 1. GitHub API搜索工具信息
@@ -75,7 +75,7 @@ git log --oneline -1
 **执行者**: 小龙虾
 **创建时间**: 2026-03-19T03:35:00Z
 **完成时间:** 2026-03-19T03:38:00Z
-**实际耗时**: 53s
+**实际耗时:** 53s
 
 ### 执行过程摘要
 1. GitHub API搜索工具信息
@@ -104,7 +104,7 @@ git log --oneline -1
 **执行者**: 小龙虾
 **创建时间**: 2026-03-19T03:35:00Z
 **完成时间:** 2026-03-19T03:45:00Z
-**实际耗时**: 6m
+**实际耗时:** 6m
 
 ### 执行过程摘要
 1. 整合TASK-001和TASK-002研究结论
@@ -255,7 +255,7 @@ P1任务完成。cron僵尸任务已解决，遗留错误日志已清理。
   - `a-stock-advisor 6/` - 新版（36文件，活跃）
   - `rdagent-temp/` - 临时目录（28文件）
   - `wechat-channel-research/` - 研究项目（6文件）
-- **行动建议**: 
+- **行动建议:**
   - 删除 `a-stock-advisor/` 旧版空壳
   - 确认 `rdagent-temp/` 是否仍需要，否则删除
   - 重命名 `a-stock-advisor 6/` → `a-stock-advisor/`
@@ -310,4 +310,43 @@ ls -la "/Users/variya/.openclaw/workspace/projects/a-stock-advisor 6/"
 
 ---
 
-*最后更新：2026-03-20T07:25:00Z*
+## [ARCHIVE-20260320-003]
+
+**原任务ID**: TASK-20260320-002
+**标题:** 清理projects/目录冗余（保守版本）
+**执行者:** 🦞小龙虾（指挥官）
+**创建时间:** 2026-03-20T00:05:00Z
+**开始时间:** 2026-03-20T00:10:00Z
+**完成时间:** 2026-03-20T00:12:00Z
+**实际耗时:** 2m
+
+### 执行过程摘要
+1. 检查rdagent-temp内容 - 发现是完整的rdagent项目（Python框架），不能删除
+2. 删除旧版a-stock-advisor空壳（仅logs，已清空）
+3. 决策：不执行a-stock-advisor 6重命名，避免破坏用户的IDE配置和脚本路径
+
+### 验证命令
+```bash
+find /Users/variya/.openclaw/workspace/projects -maxdepth 1 -type d | sort
+```
+
+### 验证结果
+✅ 旧版a-stock-advisor已删除
+✅ rdagent-temp保留（完整的rdagent项目）
+✅ a-stock-advisor 6保持原名（避免配置破坏）
+✅ 当前Projects结构：3个项目（a-stock-advisor 6、rdagent-temp、wechat-channel-research）
+
+### 决策说明
+**为什么保守处理：**
+- rdagent-temp不是临时文件，是完整的rdagent agent框架项目
+- 重命名a-stock-advisor 6风险高：
+  - 可能破坏IDE配置（VSCode workspace等）
+  - 可能破坏脚本中的硬编码路径
+  - 可能破坏Git历史追踪
+
+### 结论
+P2任务完成。采用保守清理策略：只删除真正的冗余（旧版空壳），保留有用项目。
+
+---
+
+*最后更新：2026-03-20T00:12:00Z*
