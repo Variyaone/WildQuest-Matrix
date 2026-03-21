@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-02-27T23:42:23.989930",
+  "entropy_score": 0,
+  "file_stats": {
+    "md_files": 296,
+    "py_files": 3726,
+    "json_files": 95,
+    "total": 423
+  },
+  "health_reports": [
+    5,
+    0
+  ],
+  "task_state_backups": [
+    11,
+    0
+  ],
+  "okx_temp": [
+    0,
+    0
+  ],
+  "config_duplicates": 0
+}

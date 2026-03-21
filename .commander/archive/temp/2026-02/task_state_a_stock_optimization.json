@@ -1,0 +1,71 @@
+{
+  "task_id": "a_stock_strategy_optimization",
+  "status": "pending",
+  "current_step": "analyze_sample_gap",
+  "steps": [
+    {
+      "step_id": "analyze_sample_gap",
+      "status": "pending",
+      "dependencies": [],
+      "description": "分析样本内外差异原因",
+      "output_path": "projects/a-stock-advisor/reports/sample_gap_analysis.md",
+      "estimated_time": "10min"
+    },
+    {
+      "step_id": "optimize_factors",
+      "status": "pending",
+      "dependencies": ["analyze_sample_gap"],
+      "description": "优化因子计算（滚动窗口、动态因子）",
+      "output_path": "projects/a-stock-advisor/code/rolling_factors.py",
+      "estimated_time": "15min"
+    },
+    {
+      "step_id": "add_cost_model",
+      "status": "pending",
+      "dependencies": ["optimize_factors"],
+      "description": "添加交易成本模型",
+      "output_path": "projects/a-stock-advisor/code/transaction_cost.py",
+      "estimated_time": "10min"
+    },
+    {
+      "step_id": "enhanced_backtest",
+      "status": "pending",
+      "dependencies": ["optimize_factors", "add_cost_model"],
+      "description": "运行优化后的回测",
+      "output_path": "projects/a-stock-advisor/reports/enhanced_backtest_results.json",
+      "estimated_time": "10min"
+    },
+    {
+      "step_id": "compare_results",
+      "status": "pending",
+      "dependencies": ["enhanced_backtest"],
+      "description": "对比优化前后的结果",
+      "output_path": "projects/a-stock-advisor/reports/optimization_comparison.md",
+      "estimated_time": "5min"
+    }
+  ],
+  "checkpoints": {
+    "last_checkpoint": null,
+    "checkpoint_data": {}
+  },
+  "context": {
+    "original_goal": "解决样本内外差异巨大问题，优化策略稳定性",
+    "created_by": "xiaolongxia",
+    "created_at": 1740689200,
+    "total_estimated_time": "50min",
+    "priority": "high",
+    "reason": "回测发现样本内+666%，样本外-93%，差异巨大，需要优化",
+    "problem_analysis": [
+      "静态因子无法适应市场变化",
+      "缺少交易成本导致虚高收益",
+      "模拟数据特征与真实市场不符"
+    ]
+  },
+  "error_recovery": {
+    "last_error": null,
+    "retry_count": 0,
+    "max_retries": 3
+  },
+  "created_at": 1740689200,
+  "last_updated": 1740689200
+}

@@ -1,0 +1,46 @@
+{
+  "task_id": "a_stock_full_delivery",
+  "status": "completed",
+  "phase": "delivery_done",
+  "created_at": 1740702780,
+  "completed_at": 1740726124,
+  "last_updated": 1740726124,
+  "overall_progress": 100,
+  "total_duration": "4小时45分钟",
+  "phases": [
+    {
+      "phase_id": "phase_1_data",
+      "name": "真实数据接入",
+      "status": "completed",
+      "progress": 100,
+      "completed_at": 1740703629,
+      "duration": "约15分钟"
+    },
+    {
+      "phase_id": "phase_2_factors",
+      "name": "因子有效性检验",
+      "status": "completed",
+      "progress": 100,
+      "completed_at": 1740706549,
+      "duration": "约50分钟"
+    },
+    {
+      "phase_id": "phase_3_strategy",
+      "name": "策略系统化",
+      "status": "completed",
+      "progress": 100,
+      "completed_at": 1740711237,
+      "duration": "约80分钟"
+    },
+    {
+      "phase_id": "phase_4_automation",
+      "name": "自动化交付",
+      "status": "completed",
+      "progress": 100,
+      "completed_at": 1740726124,
+      "duration": "约2小时"
+    }
+  ],
+  "delivery_date": "2026-02-28",
+  "delivery_time": "13:22"
+}

@@ -1,0 +1,68 @@
+{
+  "task_id": "a_stock_full_delivery",
+  "status": "in_progress",
+  "phase": "phase_1_data",
+  "created_at": 1740702780,
+  "last_updated": 1740702780,
+  "overall_progress": 5,
+  "phases": [
+    {
+      "phase_id": "phase_1_data",
+      "name": "真实数据接入",
+      "status": "in_progress",
+      "progress": 0,
+      "estimated_hours": "2-3h",
+      "subtasks": [
+        {"task": "安装并验证AkShare", "status": "in_progress", "agent": "architect"},
+        {"task": "下载沪深300/中证500历史数据", "status": "pending", "agent": "architect"},
+        {"task": "数据清洗和对齐", "status": "pending", "agent": "architect"},
+        {"task": "因子数据计算", "status": "pending", "agent": "architect"}
+      ]
+    },
+    {
+      "phase_id": "phase_2_factors",
+      "name": "因子专业化研究",
+      "status": "pending",
+      "progress": 0,
+      "estimated_hours": "4-6h",
+      "subtasks": [
+        {"task": "扩展因子池至20-30个", "status": "pending", "agent": "researcher"},
+        {"task": "因子有效性检验(IC/IR)", "status": "pending", "agent": "researcher"},
+        {"task": "因子正交化处理", "status": "pending", "agent": "researcher"},
+        {"task": "筛选5-10个高质量因子", "status": "pending", "agent": "researcher"}
+      ]
+    },
+    {
+      "phase_id": "phase_3_strategy",
+      "name": "策略系统化",
+      "status": "pending",
+      "progress": 0,
+      "estimated_hours": "3-4h",
+      "subtasks": [
+        {"task": "多因子打分模型", "status": "pending", "agent": "architect"},
+        {"task": "Top N选股逻辑", "status": "pending", "agent": "architect"},
+        {"task": "风险控制模块", "status": "pending", "agent": "researcher"}
+      ]
+    },
+    {
+      "phase_id": "phase_4_automation",
+      "name": "自动化交付",
+      "status": "pending",
+      "progress": 0,
+      "estimated_hours": "2h",
+      "subtasks": [
+        {"task": "每日报告生成脚本", "status": "pending", "agent": "creator"},
+        {"task": "飞书推送集成", "status": "pending", "agent": "creator"},
+        {"task": "Cron定时任务", "status": "pending", "agent": "creator"}
+      ]
+    }
+  ],
+  "success_criteria": {
+    "phase_1": "真实数据完整性>95%, 数据延迟<1天",
+    "phase_2": "IC均值>0.02, IR>0.5, 因子相关性<0.3",
+    "phase_3": "样本外夏普>1.5, 最大回撤<25%",
+    "phase_4": "飞书推送成功, 定时任务稳定运行"
+  },
+  "priority": "critical",
+  "deadline": "2026-02-28 20:00"
+}

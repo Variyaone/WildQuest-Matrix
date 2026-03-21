@@ -1,0 +1,69 @@
+{
+  "task_id": "a_stock_real_data_integration",
+  "status": "pending",
+  "current_step": "install_akshare",
+  "steps": [
+    {
+      "step_id": "install_akshare",
+      "status": "pending",
+      "dependencies": [],
+      "description": "安装AkShare库（A股数据源）",
+      "output_path": "venv_installed.log",
+      "estimated_time": "3min"
+    },
+    {
+      "step_id": "fetch_real_stock_list",
+      "status": "pending",
+      "dependencies": ["install_akshare"],
+      "description": "获取沪深300成分股列表（200只）",
+      "output_path": "projects/a-stock-advisor/data/stock_list.pkl",
+      "estimated_time": "5min"
+    },
+    {
+      "step_id": "fetch_historical_data",
+      "status": "pending",
+      "dependencies": ["fetch_real_stock_list"],
+      "description": "下载5年历史股价数据（2019-2024）",
+      "output_path": "projects/a-stock-advisor/data/real_data_2019_2024.pkl",
+      "estimated_time": "15min"
+    },
+    {
+      "step_id": "data_quality_check",
+      "status": "pending",
+      "dependencies": ["fetch_historical_data"],
+      "description": "检查数据完整性、缺失值、异常值",
+      "output_path": "projects/a-stock-advisor/reports/data_quality_check.md",
+      "estimated_time": "5min"
+    },
+    {
+      "step_id": "run_real_backtest",
+      "status": "pending",
+      "dependencies": ["data_quality_check"],
+      "description": "使用真实数据执行完整回测",
+      "output_path": "projects/a-stock-advisor/reports/real_backtest_results.json",
+      "estimated_time": "10min"
+    }
+  ],
+  "checkpoints": {
+    "last_checkpoint": null,
+    "checkpoint_data": {}
+  },
+  "context": {
+    "original_goal": "接入真实A股数据，替换模拟数据，验证策略实际效果",
+    "created_by": "xiaolongxia",
+    "created_at": 1740688800,
+    "total_estimated_time": "40min",
+    "priority": "high",
+    "reason": "模拟数据已验证系统可用，现在需要真实数据判断实际效果",
+    "data_source": "AkShare (https://github.com/akfamily/akshare)",
+    "target_range": "2019-01-01 至 2024-01-01",
+    "target_stocks": "沪深300 Top 200"
+  },
+  "error_recovery": {
+    "last_error": null,
+    "retry_count": 0,
+    "max_retries": 3
+  },
+  "created_at": 1740688800,
+  "last_updated": 1740688800
+}
