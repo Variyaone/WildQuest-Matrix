@@ -1,0 +1,68 @@
+# 数据配置
+sources:
+  primary: "yfinance"
+  fallback:
+    - "akshare"
+    - "ashare"
+    - "baostock"
+    - "eastmoney"
+    
+yfinance:
+  enabled: true
+  timeout: 30
+  retry: 3
+  
+akshare:
+  enabled: true
+  timeout: 30
+  retry: 3
+  
+ashare:
+  enabled: true
+  timeout: 30
+  retry: 3
+  
+baostock:
+  enabled: true
+  timeout: 30
+  retry: 3
+
+eastmoney:
+  enabled: true
+  timeout: 30
+  retry: 3
+
+tushare:
+  enabled: false
+  token: ""
+  timeout: 30
+  retry: 3
+
+cache:
+  stock_list_expire_days: 7
+  data_expire_days: 1
+
+update:
+  mode: "incremental"
+  batch_size: 50
+  parallel_workers: 4
+  
+freshness:
+  market_data:
+    max_delay_days: 0
+    warning_days: 1
+  financial_data:
+    max_delay_days: 30
+    warning_days: 7
+  stock_list:
+    max_delay_days: 1
+    warning_days: 3
+    
+quality:
+  min_completeness: 0.99
+  min_quality_score: 80
+  
+storage:
+  format: "parquet"
+  compression: "snappy"
+  partition_by: "date"

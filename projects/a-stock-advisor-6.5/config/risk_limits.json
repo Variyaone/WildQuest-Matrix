@@ -1,0 +1,30 @@
+{
+  "stop_loss_threshold": -0.10,
+  "take_profit_threshold": 0.20,
+  "max_portfolio_drawdown": -0.15,
+  "max_single_stock_weight": 0.08,
+  "max_industry_weight": 0.30,
+  "max_strategy_weight": 0.30,
+  "max_position_count": 20,
+  "min_position_count": 5,
+  "rebalance_frequency": "monthly",
+  "risk_free_rate": 0.03,
+  "target_volatility": 0.15,
+  "max_turnover_rate": 0.50,
+  "liquidity_threshold": 1000000,
+  "notes": [
+    "止损阈值: -10%",
+    "止盈阈值: +20%",
+    "最大组合回撤: -15%",
+    "单股最大权重: 8%",
+    "单行业最大权重: 30%",
+    "单策略最大权重: 30%",
+    "最大持仓数: 20只",
+    "最小持仓数: 5只",
+    "调仓频率: 月度",
+    "无风险利率: 3%",
+    "目标波动率: 15%",
+    "最大换手率: 50%",
+    "流动性阈值: 100万元"
+  ]
+}
