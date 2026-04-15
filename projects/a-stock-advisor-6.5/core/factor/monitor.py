@@ -2,12 +2,20 @@
 因子衰减监控模块
 
 监控因子表现随时间的衰减情况，预警因子失效。
+
+改进版本:
+- 量化衰减阈值（IC/IR下降百分比）
+- 自动触发重新验证
+- 滚动窗口监控
+- 多维度衰减评估
 """
 
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
+import json
+import os
 
 import pandas as pd
 import numpy as np
@@ -15,10 +23,20 @@ import numpy as np
 from .registry import FactorMetadata, get_factor_registry
 from .validator import ICAnalyzer, ICAnalysisResult
 from ..infrastructure.exceptions import FactorException
+from ..infrastructure.logging import get_logger
 
 
 class DecayLevel(Enum):
-    """衰减等级"""
+    """
+    衰减等级
+    
+    基于IC下降百分比判定:
+    - NONE: IC下降 < 10%
+    - MILD: IC下降 10-20%
+    - MODERATE: IC下降 20-40%
+    - SEVERE: IC下降 40-60%
+    - CRITICAL: IC下降 > 60%
+    """
     NONE = "无衰减"
     MILD = "轻微衰减"
     MODERATE = "中度衰减"
@@ -26,9 +44,56 @@ class DecayLevel(Enum):
     CRITICAL = "临界失效"
 
 
+class DecayAction(Enum):
+    """衰减触发动作"""
+    NONE = "无动作"
+    MONITOR = "持续监控"
+    ALERT = "发出预警"
+    REVALIDATE = "触发重新验证"
+    DISABLE = "停用因子"
+
+
+@dataclass
+class DecayThresholds:
+    """衰减阈值配置"""
+    ic_decline_mild: float = 0.10
+    ic_decline_moderate: float = 0.20
+    ic_decline_severe: float = 0.40
+    ic_decline_critical: float = 0.60
+    
+    ir_decline_mild: float = 0.15
+    ir_decline_moderate: float = 0.30
+    ir_decline_severe: float = 0.50
+    
+    ic_absolute_min: float = 0.02
+    ir_absolute_min: float = 0.20
+    
+    rolling_window: int = 60
+    short_term_window: int = 20
+
+
 @dataclass
 class DecayMetrics:
-    """衰减指标"""
+    """
+    衰减指标
+    
+    Attributes:
+        factor_id: 因子ID
+        current_ic: 当前IC
+        historical_ic: 历史IC（基准）
+        ic_change: IC绝对变化
+        current_ir: 当前IR
+        historical_ir: 历史IR
+        ir_change: IR绝对变化
+        ic_change_pct: IC变化百分比
+        ir_change_pct: IR变化百分比
+        decay_level: 衰减等级
+        decay_trend: 衰减趋势
+        recommended_action: 建议动作
+        rolling_ic_series: 滚动IC序列
+        warning_message: 预警信息
+        should_revalidate: 是否需要重新验证
+    """
     factor_id: str
     current_ic: float
     historical_ic: float
@@ -36,10 +101,14 @@ class DecayMetrics:
     current_ir: float
     historical_ir: float
     ir_change: float
-    decay_level: DecayLevel
-    decay_trend: str  # 'declining', 'stable', 'improving'
+    ic_change_pct: float = 0.0
+    ir_change_pct: float = 0.0
+    decay_level: DecayLevel = DecayLevel.NONE
+    decay_trend: str = "stable"
+    recommended_action: DecayAction = DecayAction.NONE
     rolling_ic_series: Optional[pd.Series] = None
     warning_message: Optional[str] = None
+    should_revalidate: bool = False
 
 
 @dataclass
@@ -101,24 +170,25 @@ class DecayDetector:
     """
     衰减检测器
     
-    检测因子衰减程度。
+    检测因子衰减程度，基于量化阈值判定。
     """
     
-    IC_DECLINE_THRESHOLD_MILD = 0.2
-    IC_DECLINE_THRESHOLD_MODERATE = 0.4
-    IC_DECLINE_THRESHOLD_SEVERE = 0.6
-    IC_DECLINE_THRESHOLD_CRITICAL = 0.8
+    def __init__(self, thresholds: Optional[DecayThresholds] = None):
+        """
+        初始化衰减检测器
+        
+        Args:
+            thresholds: 衰减阈值配置
+        """
+        self.thresholds = thresholds or DecayThresholds()
     
-    IR_DECLINE_THRESHOLD_MILD = 0.2
-    IR_DECLINE_THRESHOLD_MODERATE = 0.4
-    
-    @staticmethod
     def detect_decay(
+        self,
         current_ic: float,
         historical_ic: float,
         current_ir: float,
         historical_ir: float
-    ) -> Tuple[DecayLevel, str]:
+    ) -> Tuple[DecayLevel, str, DecayAction]:
         """
         检测衰减程度
         
@@ -129,42 +199,88 @@ class DecayDetector:
             historical_ir: 历史IR
             
         Returns:
-            Tuple[DecayLevel, str]: 衰减等级和趋势
+            Tuple[DecayLevel, str, DecayAction]: 衰减等级、趋势、建议动作
         """
         if historical_ic == 0:
-            return DecayLevel.NONE, "stable"
+            return DecayLevel.NONE, "stable", DecayAction.MONITOR
         
-        ic_change = (current_ic - historical_ic) / abs(historical_ic)
-        ir_change = (current_ir - historical_ir) / abs(historical_ir) if historical_ir != 0 else 0
+        ic_change_pct = (current_ic - historical_ic) / abs(historical_ic)
+        ir_change_pct = (current_ir - historical_ir) / abs(historical_ir) if historical_ir != 0 else 0
         
-        ic_decline = abs(ic_change) if ic_change < 0 else 0
+        ic_decline = abs(ic_change_pct) if ic_change_pct < 0 else 0
         
-        if ic_decline >= DecayDetector.IC_DECLINE_THRESHOLD_CRITICAL:
-            return DecayLevel.CRITICAL, "declining"
-        elif ic_decline >= DecayDetector.IC_DECLINE_THRESHOLD_SEVERE:
-            return DecayLevel.SEVERE, "declining"
-        elif ic_decline >= DecayDetector.IC_DECLINE_THRESHOLD_MODERATE:
-            return DecayLevel.MODERATE, "declining"
-        elif ic_decline >= DecayDetector.IC_DECLINE_THRESHOLD_MILD:
-            return DecayLevel.MILD, "stable"
-        elif ic_change > 0.1:
-            return DecayLevel.NONE, "improving"
+        if current_ic < self.thresholds.ic_absolute_min and current_ic < historical_ic:
+            level = DecayLevel.CRITICAL
+            trend = "declining"
+            action = DecayAction.DISABLE
+        elif ic_decline >= self.thresholds.ic_decline_critical:
+            level = DecayLevel.CRITICAL
+            trend = "declining"
+            action = DecayAction.DISABLE
+        elif ic_decline >= self.thresholds.ic_decline_severe:
+            level = DecayLevel.SEVERE
+            trend = "declining"
+            action = DecayAction.REVALIDATE
+        elif ic_decline >= self.thresholds.ic_decline_moderate:
+            level = DecayLevel.MODERATE
+            trend = "declining"
+            action = DecayAction.REVALIDATE
+        elif ic_decline >= self.thresholds.ic_decline_mild:
+            level = DecayLevel.MILD
+            trend = "stable"
+            action = DecayAction.ALERT
+        elif ic_change_pct > 0.15:
+            level = DecayLevel.NONE
+            trend = "improving"
+            action = DecayAction.NONE
         else:
-            return DecayLevel.NONE, "stable"
+            level = DecayLevel.NONE
+            trend = "stable"
+            action = DecayAction.NONE
+        
+        if current_ir < self.thresholds.ir_absolute_min and level == DecayLevel.NONE:
+            level = DecayLevel.MILD
+            action = DecayAction.ALERT
+        
+        return level, trend, action
+    
+    def should_trigger_revalidation(
+        self,
+        metrics: DecayMetrics
+    ) -> bool:
+        """
+        判断是否应触发重新验证
+        
+        Args:
+            metrics: 衰减指标
+            
+        Returns:
+            bool: 是否需要重新验证
+        """
+        if metrics.decay_level in [DecayLevel.MODERATE, DecayLevel.SEVERE, DecayLevel.CRITICAL]:
+            return True
+        
+        if metrics.current_ic < self.thresholds.ic_absolute_min:
+            return True
+        
+        if metrics.current_ir < self.thresholds.ir_absolute_min:
+            return True
+        
+        return False
 
 
 class FactorMonitor:
     """
     因子衰减监控器
     
-    监控因子表现衰减情况。
+    监控因子表现衰减情况，自动触发重新验证。
     """
     
     def __init__(
         self,
         lookback_days: int = 252,
         short_term_days: int = 60,
-        warning_threshold: float = 0.3
+        thresholds: Optional[DecayThresholds] = None
     ):
         """
         初始化因子监控器
@@ -172,12 +288,14 @@ class FactorMonitor:
         Args:
             lookback_days: 历史回看天数
             short_term_days: 短期观察天数
-            warning_threshold: 预警阈值
+            thresholds: 衰减阈值配置
         """
         self.lookback_days = lookback_days
         self.short_term_days = short_term_days
-        self.warning_threshold = warning_threshold
+        self.thresholds = thresholds or DecayThresholds()
         self._registry = get_factor_registry()
+        self._detector = DecayDetector(self.thresholds)
+        self.logger = get_logger("factor.monitor")
     
     def monitor_factor(
         self,
@@ -223,25 +341,48 @@ class FactorMonitor:
         ic_change = current_ic - historical_ic
         ir_change = current_ir - historical_ir
         
-        decay_level, decay_trend = DecayDetector.detect_decay(
+        ic_change_pct = ic_change / abs(historical_ic) if historical_ic != 0 else 0
+        ir_change_pct = ir_change / abs(historical_ir) if historical_ir != 0 else 0
+        
+        decay_level, decay_trend, recommended_action = self._detector.detect_decay(
             current_ic, historical_ic,
             current_ir, historical_ir
+        )
+        
+        should_revalidate = self._detector.should_trigger_revalidation(
+            DecayMetrics(
+                factor_id=factor_id,
+                current_ic=current_ic,
+                historical_ic=historical_ic,
+                ic_change=ic_change,
+                current_ir=current_ir,
+                historical_ir=historical_ir,
+                ir_change=ir_change
+            )
         )
         
         warning_message = None
         if decay_level in [DecayLevel.SEVERE, DecayLevel.CRITICAL]:
             warning_message = (
                 f"因子 {factor_id} 出现{decay_level.value}！"
-                f"IC从 {historical_ic:.4f} 下降到 {current_ic:.4f}"
+                f"IC从 {historical_ic:.4f} 下降到 {current_ic:.4f} ({ic_change_pct:.1%})"
             )
         elif decay_level == DecayLevel.MODERATE:
             warning_message = (
                 f"因子 {factor_id} 出现中度衰减，请关注。"
-                f"IC从 {historical_ic:.4f} 下降到 {current_ic:.4f}"
+                f"IC从 {historical_ic:.4f} 下降到 {current_ic:.4f} ({ic_change_pct:.1%})"
+            )
+        elif decay_level == DecayLevel.MILD:
+            warning_message = (
+                f"因子 {factor_id} 出现轻微衰减。"
+                f"IC从 {historical_ic:.4f} 变化到 {current_ic:.4f}"
             )
         
+        if should_revalidate:
+            self.logger.warning(f"因子 {factor_id} 需要重新验证: {warning_message}")
+        
         rolling_ic = RollingICCalculator.calculate_rolling_ic(
-            factor_df, return_df, window=20
+            factor_df, return_df, window=self.thresholds.rolling_window
         )
         
         return DecayMetrics(
@@ -249,13 +390,17 @@ class FactorMonitor:
             current_ic=current_ic,
             historical_ic=historical_ic,
             ic_change=ic_change,
+            ic_change_pct=ic_change_pct,
             current_ir=current_ir,
             historical_ir=historical_ir,
             ir_change=ir_change,
+            ir_change_pct=ir_change_pct,
             decay_level=decay_level,
             decay_trend=decay_trend,
+            recommended_action=recommended_action,
             rolling_ic_series=rolling_ic,
-            warning_message=warning_message
+            warning_message=warning_message,
+            should_revalidate=should_revalidate
         )
     
     def monitor_all_factors(

@@ -1,8 +1,51 @@
 """
-股票选择器模块
+股票选择器模块 - 已废弃 (DEPRECATED)
+
+⚠️ 警告：此模块已废弃，不再维护
+
+## 废弃时间
+2026-04-03
+
+## 废弃原因
+架构重构：使用AlphaGenerator替代StockSelector
+
+## 替代方案
+使用 `core.strategy.AlphaGenerator` 生成Alpha并选择股票
+
+## 迁移指南
+
+### 旧代码（已废弃）
+```python
+from core.strategy import StockSelector
+
+selector = StockSelector()
+result = selector.select(strategy, date, factor_data)
+stocks = [s.stock_code for s in result.selections]
+```
+
+### 新代码（推荐）
+```python
+from core.strategy import AlphaGenerator
+
+generator = AlphaGenerator()
+alpha_result = generator.generate(strategy.factor_config, date, factor_data)
+stocks = alpha_result.ranked_stocks[:strategy.max_positions]
+```
+
+## 相关文档
+- [TODO.md](../../TODO.md) - 待办事项
+- [REFACTOR_SUMMARY.md](../../REFACTOR_SUMMARY.md) - 重构总结
 
 根据策略配置和信号选择股票。
 """
+
+import warnings
+
+warnings.warn(
+    "StockSelector已废弃，请使用 core.strategy.AlphaGenerator",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 from typing import Dict, List, Optional, Any, Tuple, Union
 from dataclasses import dataclass

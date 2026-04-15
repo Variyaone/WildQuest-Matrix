@@ -78,6 +78,18 @@ from .storage import (
     PortfolioStorage,
 )
 
+from .sizer import (
+    SizingMethod,
+    SizingStatus,
+    PositionSize,
+    SizingResult,
+    SizingConfig,
+    PositionSizer,
+    PositionSizerError,
+    get_position_sizer,
+    reset_position_sizer,
+)
+
 
 __all__ = [
     'OptimizationStatus',
@@ -125,4 +137,14 @@ __all__ = [
     'PortfolioMetadata',
     'PortfolioSnapshot',
     'PortfolioStorage',
+    
+    'SizingMethod',
+    'SizingStatus',
+    'PositionSize',
+    'SizingResult',
+    'SizingConfig',
+    'PositionSizer',
+    'PositionSizerError',
+    'get_position_sizer',
+    'reset_position_sizer',
 ]

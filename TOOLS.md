@@ -1,15 +1,40 @@
-# TOOLS.md - 工具指南
+# TOOLS.md - Local Notes
 
-## Subagent
-优先分配任务至subagent。简单任务（1-2步）可直接执行。
+Skills define _how_ tools work. This file is for _your_ specifics — the stuff that's unique to your setup.
 
-## API密钥
-所有密钥在 `.env` 环境变量，无明文。
+## What Goes Here
 
-## 第三方服务
-- Brave: `BRAVE_SEARCH_API_KEY`
-- 飞书: `FEISHU_APP_SECRET` (App ID: cli_a90e4d460be1dbd3)
-- Git: Gitee (variyaone)
+Things like:
+
+- Camera names and locations
+- SSH hosts and aliases
+- Preferred voices for TTS
+- Speaker/room names
+- Device nicknames
+- Anything environment-specific
+
+## Examples
+
+```markdown
+### Cameras
+
+- living-room → Main area, 180° wide angle
+- front-door → Entrance, motion-triggered
+
+### SSH
+
+- home-server → 192.168.1.100, user: admin
+
+### TTS
+
+- Preferred voice: "Nova" (warm, slightly British)
+- Default speaker: Kitchen HomePod
+```
+
+## Why Separate?
+
+Skills are shared. Your setup is yours. Keeping them apart means you can update skills without losing your notes, and share skills without leaking your infrastructure.
 
 ---
-*2026-03-25*
+
+Add whatever helps you do your job. This is your cheat sheet.

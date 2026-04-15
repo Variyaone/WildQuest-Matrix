@@ -12,6 +12,8 @@
 - 信号质量监控 (SignalQualityMonitor)
 - 策略健康监控 (StrategyHealthMonitor)
 - 系统健康监控 (SystemHealthMonitor)
+- 预警触发器 (AlertTrigger)
+- 监控仪表盘 (MonitorDashboard)
 """
 
 from core.monitor.dashboard import Dashboard, DashboardManager
@@ -24,6 +26,8 @@ from core.monitor.factor_decay import FactorDecayMonitor, DecayLevel
 from core.monitor.signal_quality import SignalQualityMonitor, QualityLevel
 from core.monitor.strategy_health import StrategyHealthMonitor, HealthLevel
 from core.monitor.system_health import SystemHealthMonitor, SystemStatus
+from core.monitor.alert_trigger import AlertTrigger, AlertCategory, AlertSeverity, get_alert_trigger
+from core.monitor.monitor_dashboard import MonitorDashboard, get_monitor_dashboard
 
 __all__ = [
     "Dashboard",
@@ -47,4 +51,10 @@ __all__ = [
     "HealthLevel",
     "SystemHealthMonitor",
     "SystemStatus",
+    "AlertTrigger",
+    "AlertCategory",
+    "AlertSeverity",
+    "get_alert_trigger",
+    "MonitorDashboard",
+    "get_monitor_dashboard",
 ]

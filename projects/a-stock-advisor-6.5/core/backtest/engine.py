@@ -2,14 +2,16 @@
 回测引擎
 
 执行历史数据模拟交易。
+集成：未来函数检测、交易日历、多频率支持。
 """
 
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Callable
-from datetime import datetime
+from datetime import datetime, date
 from enum import Enum
 import pandas as pd
 import numpy as np
+import logging
 
 from .matcher import OrderMatcher, Order, OrderType, MatchResult
 from .analyzer import PerformanceAnalyzer, PerformanceMetrics
@@ -17,6 +19,18 @@ from .reporter import BacktestReporter, ReportConfig
 from .benchmark import BenchmarkManager, Benchmark
 from .slippage import SlippageModel, SlippageType
 from .cost import CostModel
+from .lookahead_guard import LookAheadGuard, LookAheadBiasError, DataAccessor, LookAheadValidator
+from .trading_calendar import TradingCalendar, MarketType, get_trading_calendar, is_trading_day
+from .frequency import (
+    BarFrequency,
+    FrequencyConfig,
+    DataResampler,
+    MultiFrequencyBacktestEngine,
+    FrequencyAwareBacktestConfig,
+    detect_data_frequency
+)
+
+logger = logging.getLogger(__name__)
 
 
 class BacktestMode(Enum):
@@ -39,6 +53,11 @@ class BacktestConfig:
     max_position_per_stock: float = 0.15
     min_trade_amount: int = 100
     price_field: str = "close"
+    enable_lookahead_guard: bool = True
+    strict_lookahead_check: bool = True
+    frequency: str = "d"
+    market: str = "A_SHARE"
+    trading_hours_only: bool = True
 
 
 @dataclass
@@ -54,6 +73,8 @@ class BacktestResult:
     benchmark_returns: Optional[pd.Series] = None
     report_path: Optional[str] = None
     error_message: Optional[str] = None
+    lookahead_report: Optional[Dict[str, Any]] = None
+    frequency_info: Optional[Dict[str, Any]] = None
     
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
@@ -63,14 +84,18 @@ class BacktestResult:
                 'initial_capital': self.config.initial_capital,
                 'start_date': self.config.start_date,
                 'end_date': self.config.end_date,
-                'benchmark': self.config.benchmark
+                'benchmark': self.config.benchmark,
+                'frequency': self.config.frequency,
+                'enable_lookahead_guard': self.config.enable_lookahead_guard
             },
             'metrics': self.metrics.to_dict(),
             'daily_returns': self.daily_returns.to_dict() if len(self.daily_returns) > 0 else {},
             'positions': self.positions.to_dict() if len(self.positions) > 0 else {},
             'trades': self.trades,
             'equity_curve': self.equity_curve.to_dict() if len(self.equity_curve) > 0 else {},
-            'error_message': self.error_message
+            'error_message': self.error_message,
+            'lookahead_report': self.lookahead_report,
+            'frequency_info': self.frequency_info
         }
 
 
@@ -190,7 +215,19 @@ class BacktestEngine:
     回测引擎
     
     执行历史数据模拟交易。
+    集成未来函数检测、交易日历、多频率支持。
     """
+    
+    FREQUENCY_MAP = {
+        '1m': BarFrequency.MINUTE_1,
+        '5m': BarFrequency.MINUTE_5,
+        '15m': BarFrequency.MINUTE_15,
+        '30m': BarFrequency.MINUTE_30,
+        '60m': BarFrequency.MINUTE_60,
+        'd': BarFrequency.DAILY,
+        'w': BarFrequency.WEEKLY,
+        'M': BarFrequency.MONTHLY,
+    }
     
     def __init__(
         self,
@@ -208,9 +245,9 @@ class BacktestEngine:
         self.data_loader = data_loader
         
         self.matcher = OrderMatcher(
-            slippage_model="percentage",
+            slippage_model="fixed",
             cost_model="ashare",
-            slippage_params={'base_rate': self.config.slippage_rate},
+            slippage_params={'slippage_rate': self.config.slippage_rate},
             cost_params={'commission_rate': self.config.commission_rate}
         )
         
@@ -221,14 +258,33 @@ class BacktestEngine:
         self._portfolio: Optional[Portfolio] = None
         self._data: Optional[pd.DataFrame] = None
         self._strategy: Optional[Callable] = None
+        
+        self._lookahead_guard = LookAheadGuard(
+            strict_mode=self.config.strict_lookahead_check,
+            log_access=True,
+            raise_on_violation=False
+        )
+        
+        self._trading_calendar = get_trading_calendar(self.config.market)
+        
+        self._bar_frequency = self.FREQUENCY_MAP.get(
+            self.config.frequency, BarFrequency.DAILY
+        )
     
     def set_data(self, data: pd.DataFrame):
         """设置回测数据"""
         self._data = data.copy()
         
-        if 'date' in self._data.columns:
-            self._data['date'] = pd.to_datetime(self._data['date'])
-            self._data = self._data.sort_values('date')
+        time_column = 'datetime' if 'datetime' in self._data.columns else 'date'
+        if time_column in self._data.columns:
+            self._data[time_column] = pd.to_datetime(self._data[time_column])
+            self._data = self._data.sort_values(time_column)
+        
+        if self.config.frequency == 'auto':
+            detected = detect_data_frequency(self._data, time_column)
+            self._bar_frequency = detected
+            self.config.frequency = detected.value
+            logger.info(f"自动检测数据频率: {detected.value}")
     
     def set_strategy(self, strategy: Callable):
         """设置策略函数"""
@@ -238,6 +294,67 @@ class BacktestEngine:
         """设置基准"""
         self.benchmark_manager.create_from_dataframe(benchmark_data, code, name)
         self.benchmark_manager.set_default(code)
+    
+    def validate_strategy(
+        self,
+        strategy: Optional[Callable] = None,
+        data: Optional[pd.DataFrame] = None
+    ) -> Dict[str, Any]:
+        """
+        验证策略是否存在未来函数
+        
+        Args:
+            strategy: 策略函数
+            data: 数据
+            
+        Returns:
+            Dict: 验证结果
+        """
+        if strategy is None:
+            strategy = self._strategy
+        if data is None:
+            data = self._data
+        
+        if strategy is None or data is None:
+            return {'valid': False, 'message': '缺少策略或数据'}
+        
+        validator = LookAheadValidator()
+        return validator.validate_strategy(strategy, data)
+    
+    def estimate_backtest_time(
+        self,
+        data: Optional[pd.DataFrame] = None
+    ) -> Dict[str, Any]:
+        """
+        估算回测时间
+        
+        Args:
+            data: 数据
+            
+        Returns:
+            Dict: 估算结果
+        """
+        if data is None:
+            data = self._data
+        
+        if data is None:
+            return {'estimated_seconds': 0, 'message': '无数据'}
+        
+        time_column = 'datetime' if 'datetime' in data.columns else 'date'
+        if time_column in data.columns:
+            start = pd.to_datetime(data[time_column].min()).date()
+            end = pd.to_datetime(data[time_column].max()).date()
+        else:
+            return {'estimated_seconds': 0, 'message': '无法确定日期范围'}
+        
+        stock_count = data['stock_code'].nunique() if 'stock_code' in data.columns else 100
+        
+        return FrequencyAwareBacktestConfig.estimate_backtest_duration(
+            frequency=self._bar_frequency,
+            start_date=start,
+            end_date=end,
+            stock_count=stock_count
+        )
     
     def run(
         self,
@@ -276,7 +393,20 @@ class BacktestEngine:
                 return self._run_event_driven()
             else:
                 return self._run_vectorized()
+        except LookAheadBiasError as e:
+            return BacktestResult(
+                success=False,
+                config=self.config,
+                metrics=PerformanceMetrics(),
+                daily_returns=pd.Series(),
+                positions=pd.DataFrame(),
+                trades=[],
+                equity_curve=pd.Series(),
+                error_message=f"未来函数错误: {str(e)}",
+                lookahead_report=self._lookahead_guard.get_report()
+            )
         except Exception as e:
+            logger.exception("回测执行失败")
             return BacktestResult(
                 success=False,
                 config=self.config,
@@ -291,39 +421,84 @@ class BacktestEngine:
     def _run_event_driven(self) -> BacktestResult:
         """事件驱动回测"""
         self._portfolio = Portfolio(self.config.initial_capital)
+        self._lookahead_guard.clear_records()
         
-        dates = self._data['date'].unique() if 'date' in self._data.columns else self._data.index.unique()
+        time_column = 'datetime' if 'datetime' in self._data.columns else 'date'
         
-        for date in dates:
-            if isinstance(date, str):
-                date = pd.to_datetime(date)
+        if self._bar_frequency == BarFrequency.DAILY:
+            dates = self._get_trading_dates()
+        else:
+            dates = self._data[time_column].unique()
+        
+        accessor = DataAccessor(self._data, self._lookahead_guard, time_column)
+        
+        for bar_time in dates:
+            if isinstance(bar_time, str):
+                bar_time = pd.to_datetime(bar_time)
             
-            if date < pd.to_datetime(self.config.start_date):
+            if bar_time < pd.to_datetime(self.config.start_date):
                 continue
-            if date > pd.to_datetime(self.config.end_date):
+            if bar_time > pd.to_datetime(self.config.end_date):
                 break
             
-            daily_data = self._data[self._data['date'] == date] if 'date' in self._data.columns else self._data.loc[date]
+            self._lookahead_guard.set_bar_time(bar_time)
+            
+            if self._bar_frequency == BarFrequency.DAILY:
+                if hasattr(bar_time, 'date'):
+                    bar_date = bar_time.date()
+                else:
+                    bar_date = bar_time
+                if not self._trading_calendar.is_trading_day(bar_date):
+                    continue
+            
+            if time_column in self._data.columns:
+                daily_data = self._data[self._data[time_column] == bar_time]
+            else:
+                daily_data = self._data[self._data['date'] == bar_time]
             
             if isinstance(daily_data, pd.Series):
                 daily_data = pd.DataFrame([daily_data])
+            
+            if len(daily_data) == 0:
+                continue
+            
+            if self.config.enable_lookahead_guard:
+                daily_data = self._lookahead_guard.filter_future_data(
+                    self._data, time_column
+                )
+                if time_column in self._data.columns:
+                    daily_data = daily_data[daily_data[time_column] == bar_time]
             
             prices = self._extract_prices(daily_data)
             self._portfolio.update_prices(prices)
             
             signals = self._strategy(
-                date=date,
+                date=bar_time,
                 data=daily_data,
                 portfolio=self._portfolio,
+                accessor=accessor,
                 context={'config': self.config}
             )
             
             if signals:
-                self._execute_signals(signals, daily_data, date)
+                self._execute_signals(signals, daily_data, bar_time)
             
-            self._portfolio.record_daily_value(date)
+            self._portfolio.record_daily_value(bar_time)
         
-        return self._generate_result()
+        lookahead_report = None
+        if self.config.enable_lookahead_guard and self._lookahead_guard.has_violations():
+            lookahead_report = self._lookahead_guard.get_report()
+            logger.warning(f"检测到 {len(self._lookahead_guard.get_violations())} 个未来函数违规")
+        
+        result = self._generate_result()
+        result.lookahead_report = lookahead_report
+        result.frequency_info = {
+            'frequency': self._bar_frequency.value,
+            'is_intraday': self._bar_frequency.is_intraday,
+            'estimated_time_factor': self._get_time_factor()
+        }
+        
+        return result
     
     def _run_vectorized(self) -> BacktestResult:
         """向量化回测"""
@@ -337,11 +512,20 @@ class BacktestEngine:
         if signals is None or len(signals) == 0:
             return self._generate_result()
         
-        for date, date_signals in signals.groupby(signals.index if hasattr(signals, 'index') else signals['date']):
+        time_column = 'datetime' if 'datetime' in self._data.columns else 'date'
+        
+        for date, date_signals in signals.groupby(
+            signals.index if hasattr(signals, 'index') else signals['date']
+        ):
             if isinstance(date, str):
                 date = pd.to_datetime(date)
             
-            daily_data = self._data[self._data['date'] == date] if 'date' in self._data.columns else self._data.loc[date]
+            self._lookahead_guard.set_bar_time(date)
+            
+            if time_column in self._data.columns:
+                daily_data = self._data[self._data[time_column] == date]
+            else:
+                daily_data = self._data[self._data['date'] == date]
             
             if isinstance(daily_data, pd.Series):
                 daily_data = pd.DataFrame([daily_data])
@@ -354,6 +538,32 @@ class BacktestEngine:
             self._portfolio.record_daily_value(date)
         
         return self._generate_result()
+    
+    def _get_trading_dates(self) -> List:
+        """获取交易日列表"""
+        time_column = 'datetime' if 'datetime' in self._data.columns else 'date'
+        
+        if time_column in self._data.columns:
+            all_dates = self._data[time_column].unique()
+        else:
+            all_dates = self._data['date'].unique()
+        
+        trading_dates = []
+        for d in all_dates:
+            if hasattr(d, 'date'):
+                bar_date = d.date()
+            else:
+                bar_date = pd.to_datetime(d).date()
+            
+            if self._trading_calendar.is_trading_day(bar_date):
+                trading_dates.append(d)
+        
+        return trading_dates
+    
+    def _get_time_factor(self) -> float:
+        """获取时间因子"""
+        engine = MultiFrequencyBacktestEngine(self._bar_frequency)
+        return engine._estimated_time_factor
     
     def _extract_prices(self, daily_data: pd.DataFrame) -> Dict[str, float]:
         """提取价格"""
@@ -380,28 +590,48 @@ class BacktestEngine:
             quantity = signal.get('quantity', 0)
             target_weight = signal.get('weight', None)
             
-            stock_data = daily_data[daily_data['stock_code'] == stock_code] if 'stock_code' in daily_data.columns else daily_data
+            if 'stock_code' in daily_data.columns:
+                stock_data = daily_data[daily_data['stock_code'] == stock_code]
+            else:
+                stock_data = daily_data
             
             if len(stock_data) == 0:
                 continue
             
             price = stock_data[self.config.price_field].iloc[0]
             
+            if pd.isna(price) or price <= 0:
+                continue
+            
             if target_weight is not None:
                 target_value = self._portfolio.total_value * target_weight
                 current_value = 0
                 if stock_code in self._portfolio.positions:
                     pos = self._portfolio.positions[stock_code]
-                    current_value = pos['quantity'] * pos['current_price']
+                    cp = pos.get('current_price', 0)
+                    if pd.isna(cp):
+                        cp = 0
+                    current_value = pos['quantity'] * cp
                 
-                trade_value = target_value - current_value
-                quantity = int(trade_value / price / self.config.min_trade_amount) * self.config.min_trade_amount
-                
-                if trade_value > 0:
-                    direction = 'buy'
-                else:
+                if target_weight == 0 and stock_code in self._portfolio.positions:
+                    pos = self._portfolio.positions[stock_code]
+                    quantity = pos['quantity']
                     direction = 'sell'
-                    quantity = abs(quantity)
+                elif target_value < 0:
+                    continue
+                else:
+                    trade_value = target_value - current_value
+                    if pd.isna(trade_value):
+                        continue
+                    quantity = int(trade_value / price / self.config.min_trade_amount) * self.config.min_trade_amount
+                    
+                    if trade_value > 0:
+                        direction = 'buy'
+                        max_quantity = int(self._portfolio.cash / price / self.config.min_trade_amount) * self.config.min_trade_amount
+                        quantity = min(quantity, max_quantity)
+                    else:
+                        direction = 'sell'
+                        quantity = abs(quantity)
             
             if quantity <= 0:
                 continue
@@ -542,3 +772,237 @@ class BacktestEngine:
             })
         
         return pd.DataFrame(comparison_data)
+    
+    def run_factor_backtest(
+        self,
+        factor_data: pd.DataFrame,
+        stock_pool: pd.DataFrame = None,
+        holding_period: int = 5,
+        top_n: int = 50
+    ) -> Dict[str, Any]:
+        """
+        因子回测
+        
+        Args:
+            factor_data: 因子数据，包含 stock_code, date, factor_value 列
+            stock_pool: 股票池数据
+            holding_period: 持仓周期（天）
+            top_n: 选股数量
+        
+        Returns:
+            回测结果字典
+        """
+        import time
+        from datetime import timedelta
+        
+        start_time = time.time()
+        
+        logger.info("=" * 60)
+        logger.info("开始因子回测")
+        logger.info("=" * 60)
+        
+        if factor_data is None or factor_data.empty:
+            logger.error("因子数据为空")
+            return {
+                "success": False,
+                "error": "因子数据为空",
+                "sharpe_ratio": 0,
+                "max_drawdown": 0,
+                "annual_return": 0,
+                "win_rate": 0,
+                "total_trades": 0
+            }
+        
+        logger.info(f"因子数据: {len(factor_data)} 行")
+        logger.info(f"持仓周期: {holding_period} 天")
+        logger.info(f"选股数量: {top_n}")
+        
+        required_cols = ['stock_code', 'date', 'factor_value']
+        for col in required_cols:
+            if col not in factor_data.columns:
+                logger.error(f"缺少必要列: {col}")
+                return {
+                    "success": False,
+                    "error": f"缺少必要列: {col}",
+                    "sharpe_ratio": 0,
+                    "max_drawdown": 0,
+                    "annual_return": 0,
+                    "win_rate": 0,
+                    "total_trades": 0
+                }
+        
+        factor_data['date'] = pd.to_datetime(factor_data['date'])
+        dates = sorted(factor_data['date'].unique())
+        
+        if len(dates) < 10:
+            logger.error("日期数量不足")
+            return {
+                "success": False,
+                "error": "日期数量不足",
+                "sharpe_ratio": 0,
+                "max_drawdown": 0,
+                "annual_return": 0,
+                "win_rate": 0,
+                "total_trades": 0
+            }
+        
+        logger.info(f"日期范围: {dates[0]} 至 {dates[-1]} ({len(dates)} 个交易日)")
+        
+        portfolio_values = []
+        current_holdings = {}
+        cash = self.config.initial_capital
+        total_value = cash
+        
+        trades = []
+        rebalance_dates = dates[::holding_period]
+        
+        for i, date in enumerate(rebalance_dates):
+            try:
+                date_data = factor_data[factor_data['date'] == date]
+                
+                if date_data.empty:
+                    continue
+                
+                date_data = date_data.sort_values('factor_value', ascending=False)
+                selected_stocks = date_data.head(top_n)['stock_code'].tolist()
+                
+                for stock_code in list(current_holdings.keys()):
+                    shares = current_holdings[stock_code]
+                    
+                    try:
+                        stock_history = self._data[
+                            (self._data['stock_code'] == stock_code) & 
+                            (self._data['date'] <= date)
+                        ]
+                        
+                        if not stock_history.empty:
+                            sell_price = stock_history.iloc[-1][self.config.price_field]
+                            proceeds = shares * sell_price * (1 - self.config.commission_rate)
+                            cash += proceeds
+                            
+                            trades.append({
+                                'date': date,
+                                'stock_code': stock_code,
+                                'direction': 'sell',
+                                'shares': shares,
+                                'price': sell_price
+                            })
+                    except Exception as e:
+                        logger.warning(f"卖出 {stock_code} 失败: {e}")
+                    
+                    del current_holdings[stock_code]
+                
+                if selected_stocks and cash > 0:
+                    weight_per_stock = 1.0 / len(selected_stocks)
+                    amount_per_stock = total_value * weight_per_stock
+                    
+                    for stock_code in selected_stocks:
+                        try:
+                            stock_history = self._data[
+                                (self._data['stock_code'] == stock_code) & 
+                                (self._data['date'] <= date)
+                            ]
+                            
+                            if not stock_history.empty:
+                                buy_price = stock_history.iloc[-1][self.config.price_field]
+                                shares = int(amount_per_stock / buy_price / 100) * 100
+                                
+                                if shares > 0:
+                                    cost = shares * buy_price * (1 + self.config.commission_rate)
+                                    if cost <= cash:
+                                        cash -= cost
+                                        current_holdings[stock_code] = shares
+                                        
+                                        trades.append({
+                                            'date': date,
+                                            'stock_code': stock_code,
+                                            'direction': 'buy',
+                                            'shares': shares,
+                                            'price': buy_price
+                                        })
+                        except Exception as e:
+                            logger.warning(f"买入 {stock_code} 失败: {e}")
+                
+                position_value = 0
+                for stock_code, shares in current_holdings.items():
+                    try:
+                        stock_history = self._data[
+                            (self._data['stock_code'] == stock_code) & 
+                            (self._data['date'] <= date)
+                        ]
+                        
+                        if not stock_history.empty:
+                            current_price = stock_history.iloc[-1][self.config.price_field]
+                            position_value += shares * current_price
+                    except Exception:
+                        pass
+                
+                total_value = cash + position_value
+                portfolio_values.append({
+                    'date': date,
+                    'total_value': total_value,
+                    'cash': cash,
+                    'position_value': position_value
+                })
+                
+            except Exception as e:
+                logger.error(f"处理日期 {date} 失败: {e}")
+        
+        if not portfolio_values:
+            logger.error("没有有效的组合数据")
+            return {
+                "success": False,
+                "error": "没有有效的组合数据",
+                "sharpe_ratio": 0,
+                "max_drawdown": 0,
+                "annual_return": 0,
+                "win_rate": 0,
+                "total_trades": 0
+            }
+        
+        portfolio_df = pd.DataFrame(portfolio_values)
+        portfolio_df['daily_return'] = portfolio_df['total_value'].pct_change()
+        
+        total_return = (portfolio_df['total_value'].iloc[-1] / self.config.initial_capital - 1)
+        years = (dates[-1] - dates[0]).days / 365.0
+        annual_return = (1 + total_return) ** (1 / years) - 1 if years > 0 else 0
+        
+        daily_returns = portfolio_df['daily_return'].dropna()
+        sharpe_ratio = (daily_returns.mean() / daily_returns.std() * np.sqrt(252)) if daily_returns.std() > 0 else 0
+        
+        cumulative = (1 + daily_returns).cumprod()
+        running_max = cumulative.cummax()
+        drawdown = (cumulative - running_max) / running_max
+        max_drawdown = abs(drawdown.min())
+        
+        winning_trades = sum(1 for t in trades if t['direction'] == 'sell' and 
+                            any(t2['stock_code'] == t['stock_code'] and t2['direction'] == 'buy' and t2['date'] < t['date'] 
+                                for t2 in trades))
+        total_sell_trades = sum(1 for t in trades if t['direction'] == 'sell')
+        win_rate = winning_trades / total_sell_trades if total_sell_trades > 0 else 0
+        
+        duration = time.time() - start_time
+        
+        logger.info("=" * 60)
+        logger.info("因子回测完成")
+        logger.info(f"  总收益: {total_return:.2%}")
+        logger.info(f"  年化收益: {annual_return:.2%}")
+        logger.info(f"  夏普比率: {sharpe_ratio:.2f}")
+        logger.info(f"  最大回撤: {max_drawdown:.2%}")
+        logger.info(f"  胜率: {win_rate:.2%}")
+        logger.info(f"  交易次数: {len(trades)}")
+        logger.info(f"  耗时: {duration:.2f} 秒")
+        logger.info("=" * 60)
+        
+        return {
+            "success": True,
+            "total_return": total_return,
+            "annual_return": annual_return,
+            "sharpe_ratio": sharpe_ratio,
+            "max_drawdown": max_drawdown,
+            "win_rate": win_rate,
+            "total_trades": len(trades),
+            "duration_seconds": duration,
+            "portfolio_values": portfolio_df.to_dict('records'),
+            "trades": trades
+        }

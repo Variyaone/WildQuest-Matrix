@@ -8,7 +8,7 @@ import json
 import os
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Callable
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, fields
 from pathlib import Path
 from enum import Enum
 
@@ -80,7 +80,8 @@ class SignalRules:
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SignalRules":
-        return cls(**{k: v for k, v in data.items() if hasattr(cls, k)})
+        field_names = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in data.items() if k in field_names})
 
 
 @dataclass

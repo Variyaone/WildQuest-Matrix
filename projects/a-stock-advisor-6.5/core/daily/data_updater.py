@@ -14,7 +14,7 @@ import pandas as pd
 from ..infrastructure.logging import get_logger
 from ..infrastructure.exceptions import DataException, DataFetchException
 from ..data.storage import get_data_storage, DataStorage
-from ..data.fetcher import get_data_fetcher, DataFetcher
+from ..data.fetcher import get_data_fetcher, MultiSourceFetcher as DataFetcher
 from ..data.metadata import MetadataManager
 
 
@@ -444,3 +444,122 @@ class DailyDataUpdater:
             status["last_update"] = latest_update.strftime('%Y-%m-%d')
         
         return status
+    
+    def update_financial_data(
+        self,
+        stock_codes: Optional[List[str]] = None
+    ) -> UpdateResult:
+        """
+        更新财务数据
+        
+        Args:
+            stock_codes: 股票代码列表（None则更新全部）
+            
+        Returns:
+            UpdateResult: 更新结果
+        """
+        import time
+        start_time = time.time()
+        
+        self.logger.info("开始更新财务数据")
+        
+        if stock_codes is None:
+            stock_codes = self.storage.stock_storage.list_stocks()
+        
+        if not stock_codes:
+            return UpdateResult(
+                success=True,
+                details={"message": "没有需要更新的股票"}
+            )
+        
+        success_count = 0
+        failed_count = 0
+        total_rows = 0
+        
+        for stock_code in stock_codes[:100]:  # 限制数量避免API限制
+            try:
+                df = self.fetcher.get_fundamental(stock_codes=[stock_code])
+                
+                if df is not None and len(df) > 0:
+                    result = self.storage.save_financial_data(df, stock_code)
+                    if result.success:
+                        success_count += 1
+                        total_rows += result.rows_stored
+                    else:
+                        failed_count += 1
+                        self.logger.warning(f"保存财务数据失败 {stock_code}: {result.error_message}")
+                else:
+                    failed_count += 1
+            except Exception as e:
+                failed_count += 1
+                self.logger.error(f"更新财务数据失败 {stock_code}: {e}")
+        
+        duration = time.time() - start_time
+        
+        self.logger.info(
+            f"财务数据更新完成: 成功={success_count}, 失败={failed_count}, "
+            f"新增行数={total_rows}, 耗时={duration:.2f}秒"
+        )
+        
+        return UpdateResult(
+            success=failed_count == 0,
+            stocks_updated=success_count,
+            stocks_failed=failed_count,
+            total_rows_added=total_rows,
+            duration_seconds=duration
+        )
+    
+    def update_northbound_data(self) -> UpdateResult:
+        """
+        更新北向资金数据
+        
+        Returns:
+            UpdateResult: 更新结果
+        """
+        import time
+        start_time = time.time()
+        
+        self.logger.info("开始更新北向资金数据")
+        
+        total_rows = 0
+        error_messages = []
+        
+        try:
+            df_holding = self.fetcher.get_northbound_holding()
+            if df_holding is not None and len(df_holding) > 0:
+                result = self.storage.save_northbound_holding(df_holding)
+                if result.success:
+                    total_rows += result.rows_stored
+                    self.logger.info(f"北向资金持股数据更新成功: {result.rows_stored}行")
+                else:
+                    error_messages.append(f"保存北向资金持股数据失败: {result.error_message}")
+        except Exception as e:
+            error_messages.append(f"获取北向资金持股数据失败: {str(e)}")
+        
+        try:
+            df_flow = self.fetcher.get_northbound_flow()
+            if df_flow is not None and len(df_flow) > 0:
+                result = self.storage.save_northbound_flow(df_flow)
+                if result.success:
+                    total_rows += result.rows_stored
+                    self.logger.info(f"北向资金净流入数据更新成功: {result.rows_stored}行")
+                else:
+                    error_messages.append(f"保存北向资金净流入数据失败: {result.error_message}")
+        except Exception as e:
+            error_messages.append(f"获取北向资金净流入数据失败: {str(e)}")
+        
+        duration = time.time() - start_time
+        
+        success = len(error_messages) == 0
+        
+        self.logger.info(
+            f"北向资金数据更新完成: 成功={success}, "
+            f"新增行数={total_rows}, 耗时={duration:.2f}秒"
+        )
+        
+        return UpdateResult(
+            success=success,
+            total_rows_added=total_rows,
+            error_messages=error_messages,
+            duration_seconds=duration
+        )

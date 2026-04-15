@@ -22,6 +22,61 @@ from .registry import (
 )
 from .classification import FactorClassification
 from .engine import FactorEngine, get_factor_engine
+from .alpha101_factors import ALPHA101_FACTORS
+from .alpha191_factors import ALPHA191_FACTORS
+from .cicc_factors import CICC_FACTORS
+from .huatai_factors import HUATAI_FACTORS
+from .shenwan_factors import SHENWAN_FACTORS
+from .talib_factors import TALIB_FACTORS
+
+
+CATEGORY_MAPPING = {
+    "MOMENTUM": FactorCategory.MOMENTUM,
+    "VALUE": FactorCategory.VALUE,
+    "QUALITY": FactorCategory.QUALITY,
+    "VOLATILITY": FactorCategory.VOLATILITY,
+    "VOLUME": FactorCategory.LIQUIDITY,
+    "LIQUIDITY": FactorCategory.LIQUIDITY,
+    "SIZE": FactorCategory.SIZE,
+    "SENTIMENT": FactorCategory.SENTIMENT,
+    "TECHNICAL": FactorCategory.TECHNICAL,
+    "ALTERNATIVE": FactorCategory.ALTERNATIVE,
+}
+
+SUB_CATEGORY_MAPPING = {
+    "TIME_SERIES_MOMENTUM": FactorSubCategory.TIME_SERIES_MOMENTUM,
+    "CROSS_SECTIONAL_MOMENTUM": FactorSubCategory.CROSS_SECTIONAL_MOMENTUM,
+    "TECHNICAL_PATTERN_MOMENTUM": FactorSubCategory.TECHNICAL_PATTERN_MOMENTUM,
+    "VALUATION": FactorSubCategory.VALUATION,
+    "RELATIVE_VALUE": FactorSubCategory.RELATIVE_VALUE,
+    "PROFITABILITY": FactorSubCategory.PROFITABILITY,
+    "GROWTH": FactorSubCategory.GROWTH,
+    "OPERATING_EFFICIENCY": FactorSubCategory.OPERATING_EFFICIENCY,
+    "FINANCIAL_HEALTH": FactorSubCategory.FINANCIAL_HEALTH,
+    "HISTORICAL_VOLATILITY": FactorSubCategory.HISTORICAL_VOLATILITY,
+    "IDIOSYNCRATIC_VOLATILITY": FactorSubCategory.IDIOSYNCRATIC_VOLATILITY,
+    "VOLATILITY_CHANGE": FactorSubCategory.VOLATILITY_CHANGE,
+    "VOLUME_FACTOR": FactorSubCategory.VOLUME_FACTOR,
+    "LIQUIDITY_INDICATOR": FactorSubCategory.LIQUIDITY_INDICATOR,
+    "LIQUIDITY_RISK": FactorSubCategory.LIQUIDITY_RISK,
+    "MARKET_CAP": FactorSubCategory.MARKET_CAP,
+    "SIZE_CHANGE": FactorSubCategory.SIZE_CHANGE,
+    "ANALYST_SENTIMENT": FactorSubCategory.ANALYST_SENTIMENT,
+    "MARKET_SENTIMENT": FactorSubCategory.MARKET_SENTIMENT,
+    "NEWS_SENTIMENT": FactorSubCategory.NEWS_SENTIMENT,
+    "TREND_FACTOR": FactorSubCategory.TREND_FACTOR,
+    "REVERSAL_FACTOR": FactorSubCategory.REVERSAL_FACTOR,
+    "PATTERN_FACTOR": FactorSubCategory.PATTERN_FACTOR,
+    "SUPPLY_CHAIN": FactorSubCategory.SUPPLY_CHAIN,
+    "INSIDER_TRADING": FactorSubCategory.INSIDER_TRADING,
+    "INSTITUTIONAL_HOLDING": FactorSubCategory.INSTITUTIONAL_HOLDING,
+    "PRICE_FACTOR": FactorSubCategory.TREND_FACTOR,
+}
+
+DIRECTION_MAPPING = {
+    "POSITIVE": FactorDirection.POSITIVE,
+    "NEGATIVE": FactorDirection.NEGATIVE,
+}
 
 
 @dataclass
@@ -39,176 +94,6 @@ class MigrationResult:
             self.factor_ids = []
         if self.errors is None:
             self.errors = []
-
-
-ALPHA101_FACTORS = [
-    {
-        "name": "动量因子_001",
-        "description": "基于收盘价和最高价的动量因子",
-        "formula": "(close - delay(close, 10)) / delay(close, 10)",
-        "category": FactorCategory.MOMENTUM,
-        "sub_category": FactorSubCategory.TIME_SERIES_MOMENTUM,
-        "direction": FactorDirection.POSITIVE,
-        "source": FactorSource.ALPHA101
-    },
-    {
-        "name": "动量因子_002",
-        "description": "基于成交量和价格的动量因子",
-        "formula": "ts_corr(close, volume, 10)",
-        "category": FactorCategory.MOMENTUM,
-        "sub_category": FactorSubCategory.CROSS_SECTIONAL_MOMENTUM,
-        "direction": FactorDirection.POSITIVE,
-        "source": FactorSource.ALPHA101
-    },
-    {
-        "name": "动量因子_003",
-        "description": "基于最高价和最低价的波动动量",
-        "formula": "ts_rank(high - low, 10)",
-        "category": FactorCategory.VOLATILITY,
-        "sub_category": FactorSubCategory.HISTORICAL_VOLATILITY,
-        "direction": FactorDirection.POSITIVE,
-        "source": FactorSource.ALPHA101
-    },
-    {
-        "name": "成交量因子_001",
-        "description": "成交量相对变化率",
-        "formula": "volume / ts_mean(volume, 20)",
-        "category": FactorCategory.LIQUIDITY,
-        "sub_category": FactorSubCategory.VOLUME_FACTOR,
-        "direction": FactorDirection.POSITIVE,
-        "source": FactorSource.ALPHA101
-    },
-    {
-        "name": "反转因子_001",
-        "description": "短期价格反转因子",
-        "formula": "-1 * ts_delta(close, 5) / delay(close, 5)",
-        "category": FactorCategory.TECHNICAL,
-        "sub_category": FactorSubCategory.REVERSAL_FACTOR,
-        "direction": FactorDirection.NEGATIVE,
-        "source": FactorSource.ALPHA101
-    },
-    {
-        "name": "趋势因子_001",
-        "description": "均线偏离度因子",
-        "formula": "(close - ts_mean(close, 20)) / ts_std(close, 20)",
-        "category": FactorCategory.TECHNICAL,
-        "sub_category": FactorSubCategory.TREND_FACTOR,
-        "direction": FactorDirection.POSITIVE,
-        "source": FactorSource.ALPHA101
-    },
-    {
-        "name": "波动率因子_001",
-        "description": "历史波动率因子",
-        "formula": "ts_std(close, 20) / ts_mean(close, 20)",
-        "category": FactorCategory.VOLATILITY,
-        "sub_category": FactorSubCategory.HISTORICAL_VOLATILITY,
-        "direction": FactorDirection.NEGATIVE,
-        "source": FactorSource.ALPHA101
-    },
-    {
-        "name": "流动性因子_001",
-        "description": "Amihud非流动性因子",
-        "formula": "abs(close - delay(close, 1)) / volume",
-        "category": FactorCategory.LIQUIDITY,
-        "sub_category": FactorSubCategory.LIQUIDITY_INDICATOR,
-        "direction": FactorDirection.NEGATIVE,
-        "source": FactorSource.ALPHA101
-    },
-    {
-        "name": "动量因子_004",
-        "description": "相对强弱因子",
-        "formula": "ts_rank(close, 60)",
-        "category": FactorCategory.MOMENTUM,
-        "sub_category": FactorSubCategory.TIME_SERIES_MOMENTUM,
-        "direction": FactorDirection.POSITIVE,
-        "source": FactorSource.ALPHA101
-    },
-    {
-        "name": "量价因子_001",
-        "description": "量价相关性因子",
-        "formula": "ts_corr(close, volume, 20)",
-        "category": FactorCategory.LIQUIDITY,
-        "sub_category": FactorSubCategory.VOLUME_FACTOR,
-        "direction": FactorDirection.POSITIVE,
-        "source": FactorSource.ALPHA101
-    }
-]
-
-
-ALPHA191_FACTORS = [
-    {
-        "name": "动量因子_101",
-        "description": "基于收盘价动量的因子",
-        "formula": "ts_rank(close / delay(close, 1), 10)",
-        "category": FactorCategory.MOMENTUM,
-        "sub_category": FactorSubCategory.TIME_SERIES_MOMENTUM,
-        "direction": FactorDirection.POSITIVE,
-        "source": FactorSource.ALPHA191
-    },
-    {
-        "name": "动量因子_102",
-        "description": "基于成交量的动量因子",
-        "formula": "volume / ts_mean(volume, 10)",
-        "category": FactorCategory.LIQUIDITY,
-        "sub_category": FactorSubCategory.VOLUME_FACTOR,
-        "direction": FactorDirection.POSITIVE,
-        "source": FactorSource.ALPHA191
-    },
-    {
-        "name": "波动因子_101",
-        "description": "日内波动率因子",
-        "formula": "(high - low) / delay(close, 1)",
-        "category": FactorCategory.VOLATILITY,
-        "sub_category": FactorSubCategory.HISTORICAL_VOLATILITY,
-        "direction": FactorDirection.NEGATIVE,
-        "source": FactorSource.ALPHA191
-    },
-    {
-        "name": "趋势因子_101",
-        "description": "价格趋势因子",
-        "formula": "ts_mean(close, 5) / ts_mean(close, 20)",
-        "category": FactorCategory.TECHNICAL,
-        "sub_category": FactorSubCategory.TREND_FACTOR,
-        "direction": FactorDirection.POSITIVE,
-        "source": FactorSource.ALPHA191
-    },
-    {
-        "name": "反转因子_101",
-        "description": "短期反转因子",
-        "formula": "-1 * (close - delay(close, 1)) / delay(close, 1)",
-        "category": FactorCategory.TECHNICAL,
-        "sub_category": FactorSubCategory.REVERSAL_FACTOR,
-        "direction": FactorDirection.NEGATIVE,
-        "source": FactorSource.ALPHA191
-    },
-    {
-        "name": "成交量因子_101",
-        "description": "成交量变化因子",
-        "formula": "ts_delta(volume, 5) / delay(volume, 5)",
-        "category": FactorCategory.LIQUIDITY,
-        "sub_category": FactorSubCategory.VOLUME_FACTOR,
-        "direction": FactorDirection.POSITIVE,
-        "source": FactorSource.ALPHA191
-    },
-    {
-        "name": "振幅因子_101",
-        "description": "价格振幅因子",
-        "formula": "(high - low) / ts_mean(high - low, 20)",
-        "category": FactorCategory.VOLATILITY,
-        "sub_category": FactorSubCategory.VOLATILITY_CHANGE,
-        "direction": FactorDirection.POSITIVE,
-        "source": FactorSource.ALPHA191
-    },
-    {
-        "name": "换手因子_101",
-        "description": "换手率因子",
-        "formula": "volume / (close * 100000000)",
-        "category": FactorCategory.LIQUIDITY,
-        "sub_category": FactorSubCategory.VOLUME_FACTOR,
-        "direction": FactorDirection.POSITIVE,
-        "source": FactorSource.ALPHA191
-    }
-]
 
 
 CUSTOM_FACTORS = [
@@ -359,6 +244,42 @@ class FactorMigrator:
         """
         return self._migrate_factors(CUSTOM_FACTORS, "自定义")
     
+    def migrate_cicc(self) -> MigrationResult:
+        """
+        迁移中金公司因子
+        
+        Returns:
+            MigrationResult: 迁移结果
+        """
+        return self._migrate_factors(CICC_FACTORS, "CICC")
+    
+    def migrate_huatai(self) -> MigrationResult:
+        """
+        迁移华泰证券因子
+        
+        Returns:
+            MigrationResult: 迁移结果
+        """
+        return self._migrate_factors(HUATAI_FACTORS, "Huatai")
+    
+    def migrate_shenwan(self) -> MigrationResult:
+        """
+        迁移申万宏源因子
+        
+        Returns:
+            MigrationResult: 迁移结果
+        """
+        return self._migrate_factors(SHENWAN_FACTORS, "ShenWan")
+    
+    def migrate_talib(self) -> MigrationResult:
+        """
+        迁移TA-Lib技术指标因子
+        
+        Returns:
+            MigrationResult: 迁移结果
+        """
+        return self._migrate_factors(TALIB_FACTORS, "TA-Lib")
+    
     def migrate_all(self) -> Dict[str, MigrationResult]:
         """
         迁移所有因子
@@ -369,7 +290,11 @@ class FactorMigrator:
         return {
             "alpha101": self.migrate_alpha101(),
             "alpha191": self.migrate_alpha191(),
-            "custom": self.migrate_custom_factors()
+            "custom": self.migrate_custom_factors(),
+            "cicc": self.migrate_cicc(),
+            "huatai": self.migrate_huatai(),
+            "shenwan": self.migrate_shenwan(),
+            "talib": self.migrate_talib()
         }
     
     def _migrate_factors(
@@ -392,14 +317,38 @@ class FactorMigrator:
         
         for factor_def in factors:
             try:
+                source = factor_def.get("source", FactorSource.SELF_DEVELOPED)
+                if isinstance(source, str):
+                    source_str = source
+                else:
+                    source_str = source.value
+                
+                category = factor_def["category"]
+                if isinstance(category, str):
+                    category_enum = CATEGORY_MAPPING.get(category, FactorCategory.TECHNICAL)
+                else:
+                    category_enum = category
+                
+                sub_category = factor_def["sub_category"]
+                if isinstance(sub_category, str):
+                    sub_category_enum = SUB_CATEGORY_MAPPING.get(sub_category, FactorSubCategory.TREND_FACTOR)
+                else:
+                    sub_category_enum = sub_category
+                
+                direction = factor_def.get("direction", FactorDirection.POSITIVE)
+                if isinstance(direction, str):
+                    direction_enum = DIRECTION_MAPPING.get(direction, FactorDirection.POSITIVE)
+                else:
+                    direction_enum = direction
+                
                 metadata = self._registry.register(
                     name=factor_def["name"],
                     description=factor_def["description"],
                     formula=factor_def["formula"],
-                    source=factor_def.get("source", FactorSource.SELF_DEVELOPED).value,
-                    category=factor_def["category"],
-                    sub_category=factor_def["sub_category"],
-                    direction=factor_def.get("direction", FactorDirection.POSITIVE),
+                    source=source_str,
+                    category=category_enum,
+                    sub_category=sub_category_enum,
+                    direction=direction_enum,
                     tags=factor_def.get("tags", [])
                 )
                 migrated_ids.append(metadata.id)

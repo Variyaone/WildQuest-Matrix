@@ -1,5 +1,5 @@
 """
-A股量化投顾系统 - 核心模块
+WildQuest Matrix - A股量化投顾系统核心模块
 
 包含：
 - data: 数据管理模块
@@ -8,16 +8,29 @@ A股量化投顾系统 - 核心模块
 - factor: 因子库管理系统
 - signal: 信号库管理系统
 - strategy: 策略库管理系统
+- portfolio: 组合优化模块
+- risk: 风控系统模块
+- backtest: 回测系统模块
+- trading: 交易系统模块
+- monitor: 监控系统模块
+- evaluation: 评估系统模块
+- rdagent: RDAgent集成模块
 """
 
 __version__ = "6.5.0"
-__author__ = "Quant Team"
+__author__ = "Variya"
 
 from .data import (
     ParquetStorage,
     DataStorage,
     get_data_storage,
-    reset_data_storage
+    reset_data_storage,
+    get_data_fetcher,
+    reset_data_fetcher,
+    get_unified_updater,
+    reset_unified_updater,
+    UnifiedDataUpdater,
+    MultiSourceFetcher
 )
 
 from .infrastructure import (
@@ -83,8 +96,8 @@ from .strategy import (
     get_strategy_registry,
     StrategyDesigner,
     get_strategy_designer,
-    StockSelector,
-    get_stock_selector,
+    # StockSelector,  # TODO: 需要重构，使用AlphaGenerator
+    # get_stock_selector,  # TODO: 需要重构
     StrategyBacktester,
     get_strategy_backtester,
     StrategyOptimizer,
@@ -123,12 +136,62 @@ from .backtest import (
     BacktestReporter
 )
 
+from .trading import (
+    OrderManager,
+    TradeOrder,
+    OrderSide,
+    OrderType,
+    PositionManager,
+    TradeNotifier,
+    create_rl_executor,
+    get_local_account_tracker,
+    get_trade_feedback_handler
+)
+
+from .monitor import (
+    Dashboard,
+    DashboardManager,
+    PerformanceTracker,
+    AlertSystem,
+    AlertLevel,
+    ReportGenerator,
+    ReportType,
+    AttributionAnalyzer,
+    FactorDecayMonitor,
+    SignalQualityMonitor,
+    StrategyHealthMonitor,
+    SystemHealthMonitor,
+    get_alert_trigger,
+    get_monitor_dashboard
+)
+
+from .evaluation import (
+    FactorEvaluator,
+    StrategyEvaluator,
+    PerformanceMetricsCalculator,
+    PerformanceComparison,
+    PerformanceRanking,
+    EvaluationReportGenerator
+)
+
+from .rdagent_integration import (
+    RDAgentRunner,
+    RDAgentConfig,
+    RDAgentScenario
+)
+
 
 __all__ = [
     "ParquetStorage",
     "DataStorage",
     "get_data_storage",
     "reset_data_storage",
+    "get_data_fetcher",
+    "reset_data_fetcher",
+    "get_unified_updater",
+    "reset_unified_updater",
+    "UnifiedDataUpdater",
+    "MultiSourceFetcher",
     
     "get_config_manager",
     "get_config",
@@ -184,8 +247,8 @@ __all__ = [
     "get_strategy_registry",
     "StrategyDesigner",
     "get_strategy_designer",
-    "StockSelector",
-    "get_stock_selector",
+    # "StockSelector",  # TODO: 需要重构
+    # "get_stock_selector",  # TODO: 需要重构
     "StrategyBacktester",
     "get_strategy_backtester",
     "StrategyOptimizer",
@@ -216,4 +279,44 @@ __all__ = [
     "PerformanceAnalyzer",
     "PerformanceMetrics",
     "BacktestReporter",
+    
+    "OrderManager",
+    "TradeOrder",
+    "OrderSide",
+    "OrderType",
+    "PositionManager",
+    "TradeNotifier",
+    "create_rl_executor",
+    "get_local_account_tracker",
+    "get_trade_feedback_handler",
+    
+    "Dashboard",
+    "DashboardManager",
+    "PerformanceTracker",
+    "AlertSystem",
+    "AlertLevel",
+    "ReportGenerator",
+    "ReportType",
+    "AttributionAnalyzer",
+    "FactorDecayMonitor",
+    "SignalQualityMonitor",
+    "StrategyHealthMonitor",
+    "SystemHealthMonitor",
+    "get_alert_trigger",
+    "get_monitor_dashboard",
+    
+    "FactorEvaluator",
+    "StrategyEvaluator",
+    "PerformanceMetricsCalculator",
+    "PerformanceComparison",
+    "PerformanceRanking",
+    "EvaluationReportGenerator",
+    
+    "RDAgentRunner",
+    "RDAgentConfig",
+    "LLMProvider",
+    "RDAgentScenario",
+    "check_rdagent_installed",
+    "get_rdagent_version",
+    "import_rdagent_factors",
 ]

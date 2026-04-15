@@ -24,6 +24,7 @@ class ReportConfig:
     include_details: bool = True
     language: str = "zh_CN"
     theme: str = "default"
+    frequency: str = "daily"
 
 
 class BacktestReporter:
@@ -61,7 +62,17 @@ class BacktestReporter:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"backtest_report_{timestamp}"
         
-        output_path = Path(self.config.output_dir)
+        frequency = backtest_result.get('config', {}).get('frequency', self.config.frequency)
+        if frequency == 'd' or frequency == 'daily':
+            freq_dir = "daily"
+        elif frequency == 'h' or frequency == 'hourly':
+            freq_dir = "hourly"
+        elif frequency == 'm' or frequency == 'minute':
+            freq_dir = "minute"
+        else:
+            freq_dir = "daily"
+        
+        output_path = Path(self.config.output_dir) / freq_dir
         output_path.mkdir(parents=True, exist_ok=True)
         
         if self.config.format == "html":

@@ -2,11 +2,17 @@
 因子计算器
 
 智能判断是否需要计算因子值，根据因子类型决定计算频率。
+
+改进版本:
+- 添加T+1约束: 因子值T日计算，T+1日才可用于选股
+- 添加缓存有效性检查
+- 细化因子频率分类
+- 添加数据依赖检查
 """
 
 import os
 import json
-from typing import Optional, List, Dict, Any, Callable
+from typing import Optional, List, Dict, Any, Callable, Tuple
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 from enum import Enum
@@ -21,16 +27,46 @@ from ..data.storage import get_data_storage
 
 
 class FactorFrequency(Enum):
-    """因子计算频率"""
+    """
+    因子计算频率
+    
+    DAILY: 日线因子，T日收盘后计算，T+1日可用
+    WEEKLY: 周线因子，周一收盘后计算
+    MONTHLY: 月线因子，月初首个交易日收盘后计算
+    QUARTERLY: 季度因子（财务类），财报发布后计算
+    INTRADAY: 日内因子，实时计算（高频策略用）
+    """
     DAILY = "daily"
     WEEKLY = "weekly"
     MONTHLY = "monthly"
     QUARTERLY = "quarterly"
+    INTRADAY = "intraday"
+
+
+class FactorAvailability(Enum):
+    """因子可用性状态"""
+    AVAILABLE = "available"
+    PENDING = "pending"
+    STALE = "stale"
+    UNAVAILABLE = "unavailable"
 
 
 @dataclass
 class FactorInfo:
-    """因子信息"""
+    """
+    因子信息
+    
+    Attributes:
+        factor_id: 因子唯一标识
+        name: 因子名称
+        frequency: 计算频率
+        description: 因子描述
+        dependencies: 依赖的数据字段列表
+        last_calculated: 最后计算时间
+        cache_path: 缓存路径
+        available_date: 因子可用的日期（T+1约束）
+        data_requirements: 数据需求（如需要哪些行情字段）
+    """
     factor_id: str
     name: str
     frequency: FactorFrequency
@@ -38,6 +74,8 @@ class FactorInfo:
     dependencies: List[str] = field(default_factory=list)
     last_calculated: Optional[datetime] = None
     cache_path: Optional[str] = None
+    available_date: Optional[datetime] = None
+    data_requirements: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -355,38 +393,205 @@ class DailyFactorCalculator:
         self,
         factor_info: FactorInfo,
         date: datetime
-    ) -> tuple:
+    ) -> Tuple[bool, str]:
         """
         判断是否需要计算因子
+        
+        改进版本:
+        1. 检查缓存是否存在且有效
+        2. 检查计算周期是否到达
+        3. 检查依赖数据是否更新
+        4. 返回详细原因
         
         Args:
             factor_info: 因子信息
             date: 当前日期
             
         Returns:
-            tuple: (是否需要计算, 原因)
+            Tuple[bool, str]: (是否需要计算, 原因)
         """
         frequency = factor_info.frequency
         
         if frequency == FactorFrequency.DAILY:
-            return True, "日线因子需要每日计算"
+            cache_valid, cache_reason = self._check_cache_validity(factor_info, date)
+            if cache_valid:
+                return False, f"缓存有效: {cache_reason}"
+            
+            data_ready, data_reason = self._check_data_dependencies(factor_info, date)
+            if not data_ready:
+                return False, f"数据未就绪: {data_reason}"
+            
+            return True, "日线因子需要计算"
         
         if frequency == FactorFrequency.WEEKLY:
-            if date.weekday() == 0:
-                return True, "周线因子在周一计算"
-            return False, "周线因子只在周一计算"
+            if date.weekday() != 0:
+                return False, "周线因子只在周一计算"
+            
+            cache_valid, cache_reason = self._check_cache_validity(factor_info, date)
+            if cache_valid:
+                return False, f"缓存有效: {cache_reason}"
+            
+            return True, "周线因子在周一计算"
         
         if frequency == FactorFrequency.MONTHLY:
-            if date.day <= 5:
-                return True, "月线因子在月初计算"
-            return False, "月线因子只在月初计算"
+            if date.day > 7:
+                return False, "月线因子只在月初前7天计算"
+            
+            cache_valid, cache_reason = self._check_cache_validity(factor_info, date)
+            if cache_valid:
+                return False, f"缓存有效: {cache_reason}"
+            
+            return True, "月线因子在月初计算"
         
         if frequency == FactorFrequency.QUARTERLY:
-            if date.month in [1, 4, 7, 10] and date.day <= 10:
-                return True, "季度因子在季度初计算"
-            return False, "季度因子只在季度初计算"
+            if date.month not in [1, 4, 7, 10]:
+                return False, "季度因子只在季度首月计算"
+            if date.day > 15:
+                return False, "季度因子只在季度首月前15天计算"
+            
+            cache_valid, cache_reason = self._check_cache_validity(factor_info, date)
+            if cache_valid:
+                return False, f"缓存有效: {cache_reason}"
+            
+            return True, "季度因子在季度初计算"
+        
+        if frequency == FactorFrequency.INTRADAY:
+            return True, "日内因子实时计算"
         
         return True, "默认需要计算"
+    
+    def _check_cache_validity(
+        self,
+        factor_info: FactorInfo,
+        date: datetime
+    ) -> Tuple[bool, str]:
+        """
+        检查缓存有效性
+        
+        Args:
+            factor_info: 因子信息
+            date: 当前日期
+            
+        Returns:
+            Tuple[bool, str]: (是否有效, 原因)
+        """
+        if factor_info.last_calculated is None:
+            return False, "从未计算"
+        
+        cache_age = (date - factor_info.last_calculated).total_seconds() / 3600
+        
+        max_age_hours = {
+            FactorFrequency.DAILY: 24,
+            FactorFrequency.WEEKLY: 168,
+            FactorFrequency.MONTHLY: 720,
+            FactorFrequency.QUARTERLY: 2160,
+            FactorFrequency.INTRADAY: 1,
+        }
+        
+        threshold = max_age_hours.get(factor_info.frequency, 24)
+        
+        if cache_age > threshold:
+            return False, f"缓存过期 ({cache_age:.1f}小时 > {threshold}小时)"
+        
+        if factor_info.cache_path and not os.path.exists(factor_info.cache_path):
+            return False, "缓存文件不存在"
+        
+        return True, f"缓存新鲜 ({cache_age:.1f}小时)"
+    
+    def _check_data_dependencies(
+        self,
+        factor_info: FactorInfo,
+        date: datetime
+    ) -> Tuple[bool, str]:
+        """
+        检查数据依赖是否就绪
+        
+        Args:
+            factor_info: 因子信息
+            date: 当前日期
+            
+        Returns:
+            Tuple[bool, str]: (是否就绪, 原因)
+        """
+        if not factor_info.data_requirements:
+            return True, "无数据依赖"
+        
+        date_str = date.strftime('%Y-%m-%d')
+        
+        for req in factor_info.data_requirements:
+            try:
+                data_path = os.path.join(
+                    self.data_paths.data_root,
+                    "market",
+                    req,
+                    f"{date_str}.parquet"
+                )
+                if not os.path.exists(data_path):
+                    return False, f"缺少数据: {req}"
+            except Exception as e:
+                return False, f"检查数据失败: {req} - {e}"
+        
+        return True, "数据依赖已就绪"
+    
+    def get_factor_availability(
+        self,
+        factor_id: str,
+        target_date: datetime
+    ) -> Tuple[FactorAvailability, str]:
+        """
+        获取因子在目标日期的可用性
+        
+        T+1约束: 因子在T日计算，T+1日才可用于选股
+        
+        Args:
+            factor_id: 因子ID
+            target_date: 目标日期
+            
+        Returns:
+            Tuple[FactorAvailability, str]: (可用性状态, 原因)
+        """
+        if factor_id not in self._factor_registry:
+            return FactorAvailability.UNAVAILABLE, f"因子未注册: {factor_id}"
+        
+        factor_info = self._factor_registry[factor_id]
+        
+        if factor_info.last_calculated is None:
+            return FactorAvailability.UNAVAILABLE, "因子从未计算"
+        
+        if factor_info.available_date is None:
+            expected_available = factor_info.last_calculated + timedelta(days=1)
+        else:
+            expected_available = factor_info.available_date
+        
+        if target_date < expected_available:
+            return FactorAvailability.PENDING, f"因子将在 {expected_available.strftime('%Y-%m-%d')} 可用"
+        
+        freshness = self.check_factor_freshness([factor_id])
+        if not freshness.get(factor_id, False):
+            return FactorAvailability.STALE, "因子数据已过期"
+        
+        return FactorAvailability.AVAILABLE, "因子可用"
+    
+    def get_factors_for_selection(
+        self,
+        target_date: datetime
+    ) -> Dict[str, FactorAvailability]:
+        """
+        获取目标日期可用于选股的因子列表
+        
+        Args:
+            target_date: 目标日期
+            
+        Returns:
+            Dict[str, FactorAvailability]: 因子可用性字典
+        """
+        availability = {}
+        
+        for factor_id in self._factor_registry.keys():
+            status, _ = self.get_factor_availability(factor_id, target_date)
+            availability[factor_id] = status
+        
+        return availability
     
     def _save_factor_data(
         self,

@@ -378,6 +378,28 @@ class PositionManager:
         industry: str = "",
         notes: str = ""
     ) -> bool:
+        """
+        手动添加持仓（不经过交易反馈确认）
+        
+        注意：此方法直接添加持仓，不经过交易反馈确认流程。
+        此方法仅用于特殊场景（如历史数据导入、系统初始化等），
+        不应该用于正常的交易流程。
+        
+        在生产环境中，持仓更新应该通过LocalAccountTracker的submit_trade_feedback方法进行，
+        以确保只有经过交易员反馈确认的交易才会更新持仓。
+        
+        Args:
+            stock_code: 股票代码
+            stock_name: 股票名称
+            quantity: 持仓数量
+            avg_cost: 平均成本
+            sector: 板块
+            industry: 行业
+            notes: 备注
+            
+        Returns:
+            是否成功
+        """
         if stock_code in self.positions:
             logger.warning(f"持仓已存在: {stock_code}")
             return False
@@ -404,6 +426,26 @@ class PositionManager:
         current_price: float = None,
         notes: str = None
     ) -> bool:
+        """
+        手动更新持仓（不经过交易反馈确认）
+        
+        注意：此方法直接更新持仓，不经过交易反馈确认流程。
+        此方法仅用于特殊场景（如历史数据修正、系统初始化等），
+        不应该用于正常的交易流程。
+        
+        在生产环境中，持仓更新应该通过LocalAccountTracker的submit_trade_feedback方法进行，
+        以确保只有经过交易员反馈确认的交易才会更新持仓。
+        
+        Args:
+            stock_code: 股票代码
+            quantity: 持仓数量
+            avg_cost: 平均成本
+            current_price: 当前价格
+            notes: 备注
+            
+        Returns:
+            是否成功
+        """
         if stock_code not in self.positions:
             logger.warning(f"持仓不存在: {stock_code}")
             return False
@@ -426,6 +468,22 @@ class PositionManager:
         return True
     
     def delete_position(self, stock_code: str) -> bool:
+        """
+        删除持仓（不经过交易反馈确认）
+        
+        注意：此方法直接删除持仓，不经过交易反馈确认流程。
+        此方法仅用于特殊场景（如历史数据清理、系统初始化等），
+        不应该用于正常的交易流程。
+        
+        在生产环境中，持仓更新应该通过LocalAccountTracker的submit_trade_feedback方法进行，
+        以确保只有经过交易员反馈确认的交易才会更新持仓。
+        
+        Args:
+            stock_code: 股票代码
+            
+        Returns:
+            是否成功
+        """
         if stock_code not in self.positions:
             logger.warning(f"持仓不存在: {stock_code}")
             return False

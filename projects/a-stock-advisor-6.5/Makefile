@@ -1,7 +1,7 @@
 .PHONY: help install dev test lint format clean build publish docs data backup run
 
 help:
-	@echo "A股量化投顾系统 - 构建命令"
+	@echo "WildQuest Matrix - 构建命令"
 	@echo ""
 	@echo "安装命令:"
 	@echo "  make install      安装生产依赖"

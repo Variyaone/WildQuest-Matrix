@@ -232,9 +232,16 @@ class PerformanceAnalyzer:
         """计算回撤"""
         cumulative = (1 + returns).cumprod()
         running_max = cumulative.cummax()
-        drawdown = (cumulative - running_max) / running_max
+        
+        running_max_safe = running_max.replace(0, np.nan)
+        drawdown = (cumulative - running_max_safe) / running_max_safe
         
         max_drawdown = drawdown.min()
+        
+        if pd.isna(max_drawdown) or not np.isfinite(max_drawdown):
+            max_drawdown = -1.0
+        else:
+            max_drawdown = max(max_drawdown, -1.0)
         
         is_drawdown = drawdown < 0
         drawdown_groups = (is_drawdown != is_drawdown.shift()).cumsum()

@@ -1,7 +1,7 @@
 """
 策略设计器模块
 
-可视化策略设计和配置，支持信号组合配置、调仓频率设置、风控参数配置。
+可视化策略设计和配置，支持因子组合配置、调仓频率设置、风控参数配置。
 """
 
 from typing import Dict, List, Optional, Any, Tuple
@@ -14,11 +14,10 @@ from .registry import (
     StrategyStatus,
     RebalanceFrequency,
     RiskParams,
-    SignalConfig,
     StrategyPerformance,
     get_strategy_registry
 )
-from ..signal import get_signal_registry
+from .factor_combiner import FactorCombinationConfig
 from ..infrastructure.exceptions import StrategyException
 
 
@@ -28,7 +27,7 @@ class StrategyTemplate:
     name: str
     description: str
     strategy_type: StrategyType
-    signal_config: SignalConfig
+    factor_config: FactorCombinationConfig
     rebalance_freq: RebalanceFrequency
     max_positions: int
     risk_params: RiskParams
@@ -40,10 +39,10 @@ BUILTIN_TEMPLATES: Dict[str, StrategyTemplate] = {
         name="多因子选股策略（基础版）",
         description="基于动量、价值、质量因子的量化选股策略",
         strategy_type=StrategyType.MULTI_FACTOR,
-        signal_config=SignalConfig(
-            signal_ids=["S00001", "S00002", "S00003"],
+        factor_config=FactorCombinationConfig(
+            factor_ids=["F00001", "F00002", "F00003"],
             weights=[0.4, 0.3, 0.3],
-            combination_method="weighted_sum"
+            combination_method="ic_weighted"
         ),
         rebalance_freq=RebalanceFrequency.WEEKLY,
         max_positions=20,
@@ -59,10 +58,10 @@ BUILTIN_TEMPLATES: Dict[str, StrategyTemplate] = {
         name="动量趋势策略",
         description="基于价格动量和趋势跟踪的策略",
         strategy_type=StrategyType.TREND_FOLLOWING,
-        signal_config=SignalConfig(
-            signal_ids=["S00010"],
+        factor_config=FactorCombinationConfig(
+            factor_ids=["F00010"],
             weights=[1.0],
-            combination_method="weighted_sum"
+            combination_method="ic_weighted"
         ),
         rebalance_freq=RebalanceFrequency.DAILY,
         max_positions=10,
@@ -78,10 +77,10 @@ BUILTIN_TEMPLATES: Dict[str, StrategyTemplate] = {
         name="价值投资策略",
         description="基于估值因子的长期价值投资策略",
         strategy_type=StrategyType.STOCK_SELECTION,
-        signal_config=SignalConfig(
-            signal_ids=["S00020", "S00021"],
+        factor_config=FactorCombinationConfig(
+            factor_ids=["F00020", "F00021"],
             weights=[0.6, 0.4],
-            combination_method="weighted_sum"
+            combination_method="ic_weighted"
         ),
         rebalance_freq=RebalanceFrequency.MONTHLY,
         max_positions=15,
@@ -97,10 +96,10 @@ BUILTIN_TEMPLATES: Dict[str, StrategyTemplate] = {
         name="均值回归策略",
         description="基于价格偏离均值的回归策略",
         strategy_type=StrategyType.MEAN_REVERSION,
-        signal_config=SignalConfig(
-            signal_ids=["S00030"],
+        factor_config=FactorCombinationConfig(
+            factor_ids=["F00030"],
             weights=[1.0],
-            combination_method="weighted_sum"
+            combination_method="ic_weighted"
         ),
         rebalance_freq=RebalanceFrequency.WEEKLY,
         max_positions=25,
@@ -125,7 +124,6 @@ class StrategyDesigner:
     def __init__(self):
         """初始化策略设计器"""
         self._registry = get_strategy_registry()
-        self._signal_registry = get_signal_registry()
         self._templates = BUILTIN_TEMPLATES.copy()
     
     def list_templates(self) -> Dict[str, StrategyTemplate]:
@@ -163,9 +161,9 @@ class StrategyDesigner:
         
         customizations = customizations or {}
         
-        signal_config = template.signal_config
-        if "signals" in customizations:
-            signal_config = SignalConfig(**customizations["signals"])
+        factor_config = template.factor_config
+        if "factor_config" in customizations:
+            factor_config = FactorCombinationConfig(**customizations["factor_config"])
         
         risk_params = template.risk_params
         if "risk_params" in customizations:
@@ -181,7 +179,7 @@ class StrategyDesigner:
             name=name or template.name,
             description=template.description,
             strategy_type=template.strategy_type,
-            signals=signal_config,
+            factor_config=factor_config,
             rebalance_freq=rebalance_freq,
             max_positions=max_positions,
             risk_params=risk_params,
@@ -193,9 +191,9 @@ class StrategyDesigner:
         name: str,
         description: str,
         strategy_type: StrategyType,
-        signal_ids: List[str],
-        signal_weights: Optional[List[float]] = None,
-        combination_method: str = "weighted_sum",
+        factor_ids: List[str],
+        factor_weights: Optional[List[float]] = None,
+        combination_method: str = "ic_weighted",
         rebalance_freq: RebalanceFrequency = RebalanceFrequency.WEEKLY,
         max_positions: int = 20,
         risk_params: Optional[RiskParams] = None,
@@ -208,8 +206,8 @@ class StrategyDesigner:
             name: 策略名称
             description: 策略描述
             strategy_type: 策略类型
-            signal_ids: 信号ID列表
-            signal_weights: 信号权重列表
+            factor_ids: 因子ID列表
+            factor_weights: 因子权重列表
             combination_method: 组合方法
             rebalance_freq: 调仓频率
             max_positions: 最大持仓数
@@ -219,12 +217,12 @@ class StrategyDesigner:
         Returns:
             StrategyMetadata: 创建的策略元数据
         """
-        if signal_weights is None:
-            signal_weights = [1.0 / len(signal_ids)] * len(signal_ids)
+        if factor_weights is None:
+            factor_weights = [1.0 / len(factor_ids)] * len(factor_ids)
         
-        signal_config = SignalConfig(
-            signal_ids=signal_ids,
-            weights=signal_weights,
+        factor_config = FactorCombinationConfig(
+            factor_ids=factor_ids,
+            weights=factor_weights,
             combination_method=combination_method
         )
         
@@ -234,29 +232,29 @@ class StrategyDesigner:
             name=name,
             description=description,
             strategy_type=strategy_type,
-            signals=signal_config,
+            factor_config=factor_config,
             rebalance_freq=rebalance_freq,
             max_positions=max_positions,
             risk_params=risk_params,
             tags=tags or []
         )
     
-    def validate_signal_config(self, signal_config: SignalConfig) -> Tuple[bool, List[str]]:
+    def validate_factor_config(self, factor_config: FactorCombinationConfig) -> Tuple[bool, List[str]]:
         """
-        验证信号配置
+        验证因子配置
         
         Args:
-            signal_config: 信号配置
+            factor_config: 因子配置
             
         Returns:
             Tuple[bool, List[str]]: 是否有效，错误信息列表
         """
         errors = []
         
-        if not signal_config.signal_ids:
-            errors.append("信号列表不能为空")
+        if not factor_config.factor_ids:
+            errors.append("因子列表不能为空")
         
-        if len(signal_config.signal_ids) != len(signal_config.weights):
+        if len(factor_config.factor_ids) != len(factor_config.weights):
             errors.append("信号数量与权重数量不匹配")
         
         if signal_config.weights:
@@ -394,10 +392,10 @@ class StrategyDesigner:
             name=new_name,
             description=original.description + " (克隆)",
             strategy_type=original.strategy_type,
-            signals=SignalConfig(
-                signal_ids=original.signals.signal_ids.copy(),
-                weights=original.signals.weights.copy(),
-                combination_method=original.signals.combination_method
+            factor_config=FactorCombinationConfig(
+                factor_ids=original.factor_config.factor_ids.copy(),
+                weights=original.factor_config.weights.copy(),
+                combination_method=original.factor_config.combination_method
             ),
             rebalance_freq=original.rebalance_freq,
             max_positions=original.max_positions,

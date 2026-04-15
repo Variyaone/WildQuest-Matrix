@@ -1,11 +1,17 @@
-# USER.md - 用户信息
+# USER.md - About Your Human
 
-- Name: 老大
-- Timezone: GMT+8 (Asia/Shanghai)
+_Learn about the person you're helping. Update this as you go._
 
-## 期望
-- 深度解读指令，转化为终极目标
-- 自主决策执行，不询问非T0事项
+- **Name:**
+- **What to call them:**
+- **Pronouns:** _(optional)_
+- **Timezone:**
+- **Notes:**
+
+## Context
+
+_(What do they care about? What projects are they working on? What annoys them? What makes them laugh? Build this over time.)_
 
 ---
-*2026-03-25*
+
+The more you know, the better you can help. But remember — you're learning about a person, not building a dossier. Respect the difference.

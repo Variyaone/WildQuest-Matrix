@@ -26,6 +26,11 @@ class BackupType(Enum):
     MONTHLY = "monthly"
     CORE_ASSETS = "core_assets"
     CONFIG = "config"
+    REPORTS = "reports"
+    FACTOR_POOL = "factor_pool"
+    STRATEGY_POOL = "strategy_pool"
+    ENVIRONMENT = "environment"
+    FULL = "full"
 
 
 @dataclass
@@ -118,7 +123,12 @@ class DailyBackup:
         BackupType.WEEKLY: 180,
         BackupType.MONTHLY: 1095,
         BackupType.CORE_ASSETS: -1,
-        BackupType.CONFIG: 10
+        BackupType.CONFIG: 10,
+        BackupType.REPORTS: 180,
+        BackupType.FACTOR_POOL: -1,
+        BackupType.STRATEGY_POOL: -1,
+        BackupType.ENVIRONMENT: 30,
+        BackupType.FULL: 365,
     }
     
     CORE_ASSETS = [
@@ -139,13 +149,48 @@ class DailyBackup:
     REPORT_DATA = [
         "reports/daily",
         "reports/weekly",
-        "reports/monthly"
+        "reports/monthly",
+        "reports/archive"
     ]
     
     CONFIG_FILES = [
         "config.yaml",
         ".env",
-        "requirements.txt"
+        "requirements.txt",
+        "requirements-dev.txt",
+        "requirements-ml.txt",
+        "requirements-viz.txt",
+        "requirements-optimization.txt",
+        "requirements-backtest.txt",
+        "requirements-data.txt",
+    ]
+    
+    PROJECT_CONFIG_FILES = [
+        "config/data.yaml",
+        "config/pipeline_config.json",
+        "config/risk_limits.json",
+        "config/feature_flags.json.example",
+        "config/feishu_config.json.example",
+    ]
+    
+    ENV_FILES = [
+        ".env",
+        ".env.local",
+        ".env.production",
+        ".env.development",
+    ]
+    
+    FACTOR_POOL_FILES = [
+        "factors/factor_pool.db",
+        "factors/factor_registry.json",
+        "factors/factor_scores.json",
+        "factors/factor_metadata.json",
+    ]
+    
+    STRATEGY_POOL_FILES = [
+        "strategies/strategy_pool.db",
+        "strategies/strategy_registry.json",
+        "strategies/strategy_configs.json",
     ]
     
     def __init__(
@@ -173,7 +218,18 @@ class DailyBackup:
     
     def _setup_backup_dirs(self):
         """设置备份目录"""
-        subdirs = ["daily", "weekly", "monthly", "core_assets", "config"]
+        subdirs = [
+            "daily", 
+            "weekly", 
+            "monthly", 
+            "core_assets", 
+            "config",
+            "reports",
+            "factor_pool",
+            "strategy_pool",
+            "environment",
+            "full"
+        ]
         
         for subdir in subdirs:
             dir_path = os.path.join(self.backup_dir, subdir)
@@ -743,3 +799,504 @@ class DailyBackup:
         stats["total_size_mb"] = stats["total_size"] / 1024 / 1024
         
         return stats
+    
+    def backup_reports(
+        self,
+        date: Optional[datetime] = None,
+        description: str = ""
+    ) -> BackupResult:
+        """
+        备份报告数据
+        
+        Args:
+            date: 备份日期
+            description: 备份描述
+            
+        Returns:
+            BackupResult: 备份结果
+        """
+        import time
+        start_time = time.time()
+        
+        date = date or datetime.now()
+        date_str = date.strftime('%Y-%m-%d')
+        
+        self.logger.info(f"开始备份报告数据: {date_str}")
+        
+        try:
+            contents = []
+            temp_dir = self._create_temp_backup_dir(date_str, BackupType.REPORTS)
+            
+            for report_path in self.REPORT_DATA:
+                src_path = os.path.join(self.data_paths.data_root, report_path)
+                
+                if os.path.exists(src_path):
+                    dst_path = os.path.join(temp_dir, "reports", report_path.replace("/", "_"))
+                    Path(dst_path).parent.mkdir(parents=True, exist_ok=True)
+                    
+                    if os.path.isdir(src_path):
+                        shutil.copytree(src_path, dst_path)
+                    else:
+                        shutil.copy2(src_path, dst_path)
+                    
+                    contents.append(report_path)
+            
+            backup_path = self._create_archive(temp_dir, date_str, BackupType.REPORTS)
+            checksum = self._calculate_checksum(backup_path)
+            verified = self._verify_backup(backup_path)
+            backup_size = os.path.getsize(backup_path) if os.path.exists(backup_path) else 0
+            
+            self._update_backup_index(
+                date_str, BackupType.REPORTS, backup_path, backup_size, contents, verified, checksum
+            )
+            
+            shutil.rmtree(temp_dir)
+            self._cleanup_old_backups(BackupType.REPORTS)
+            
+            duration = time.time() - start_time
+            
+            self.logger.info(f"报告备份完成: {backup_path}")
+            
+            return BackupResult(
+                success=True,
+                backup_type=BackupType.REPORTS,
+                backup_path=backup_path,
+                backup_size=backup_size,
+                files_count=len(contents),
+                duration_seconds=duration,
+                verified=verified,
+                details={"contents": contents, "checksum": checksum}
+            )
+            
+        except Exception as e:
+            duration = time.time() - start_time
+            self.logger.error(f"报告备份失败: {e}")
+            return BackupResult(
+                success=False,
+                backup_type=BackupType.REPORTS,
+                duration_seconds=duration,
+                error_message=str(e)
+            )
+    
+    def backup_factor_pool(
+        self,
+        date: Optional[datetime] = None,
+        description: str = ""
+    ) -> BackupResult:
+        """
+        备份因子库
+        
+        Args:
+            date: 备份日期
+            description: 备份描述
+            
+        Returns:
+            BackupResult: 备份结果
+        """
+        import time
+        start_time = time.time()
+        
+        date = date or datetime.now()
+        date_str = date.strftime('%Y-%m-%d')
+        
+        self.logger.info(f"开始备份因子库: {date_str}")
+        
+        try:
+            contents = []
+            temp_dir = self._create_temp_backup_dir(date_str, BackupType.FACTOR_POOL)
+            
+            for factor_file in self.FACTOR_POOL_FILES:
+                src_path = os.path.join(self.data_paths.data_root, factor_file)
+                
+                if os.path.exists(src_path):
+                    dst_path = os.path.join(temp_dir, "factor_pool", os.path.basename(factor_file))
+                    Path(dst_path).parent.mkdir(parents=True, exist_ok=True)
+                    
+                    if os.path.isdir(src_path):
+                        shutil.copytree(src_path, dst_path)
+                    else:
+                        shutil.copy2(src_path, dst_path)
+                    
+                    contents.append(factor_file)
+            
+            factors_dir = os.path.join(self.data_paths.data_root, "factors")
+            if os.path.exists(factors_dir) and os.path.isdir(factors_dir):
+                for item in os.listdir(factors_dir):
+                    if item.endswith('.db') or item.endswith('.json'):
+                        src = os.path.join(factors_dir, item)
+                        dst = os.path.join(temp_dir, "factor_pool", item)
+                        if os.path.isfile(src):
+                            shutil.copy2(src, dst)
+                            contents.append(f"factors/{item}")
+            
+            backup_path = self._create_archive(temp_dir, date_str, BackupType.FACTOR_POOL)
+            checksum = self._calculate_checksum(backup_path)
+            verified = self._verify_backup(backup_path)
+            backup_size = os.path.getsize(backup_path) if os.path.exists(backup_path) else 0
+            
+            self._update_backup_index(
+                date_str, BackupType.FACTOR_POOL, backup_path, backup_size, contents, verified, checksum
+            )
+            
+            shutil.rmtree(temp_dir)
+            
+            duration = time.time() - start_time
+            
+            self.logger.info(f"因子库备份完成: {backup_path}")
+            
+            return BackupResult(
+                success=True,
+                backup_type=BackupType.FACTOR_POOL,
+                backup_path=backup_path,
+                backup_size=backup_size,
+                files_count=len(contents),
+                duration_seconds=duration,
+                verified=verified,
+                details={"contents": contents, "checksum": checksum}
+            )
+            
+        except Exception as e:
+            duration = time.time() - start_time
+            self.logger.error(f"因子库备份失败: {e}")
+            return BackupResult(
+                success=False,
+                backup_type=BackupType.FACTOR_POOL,
+                duration_seconds=duration,
+                error_message=str(e)
+            )
+    
+    def backup_strategy_pool(
+        self,
+        date: Optional[datetime] = None,
+        description: str = ""
+    ) -> BackupResult:
+        """
+        备份策略库
+        
+        Args:
+            date: 备份日期
+            description: 备份描述
+            
+        Returns:
+            BackupResult: 备份结果
+        """
+        import time
+        start_time = time.time()
+        
+        date = date or datetime.now()
+        date_str = date.strftime('%Y-%m-%d')
+        
+        self.logger.info(f"开始备份策略库: {date_str}")
+        
+        try:
+            contents = []
+            temp_dir = self._create_temp_backup_dir(date_str, BackupType.STRATEGY_POOL)
+            
+            for strategy_file in self.STRATEGY_POOL_FILES:
+                src_path = os.path.join(self.data_paths.data_root, strategy_file)
+                
+                if os.path.exists(src_path):
+                    dst_path = os.path.join(temp_dir, "strategy_pool", os.path.basename(strategy_file))
+                    Path(dst_path).parent.mkdir(parents=True, exist_ok=True)
+                    
+                    if os.path.isdir(src_path):
+                        shutil.copytree(src_path, dst_path)
+                    else:
+                        shutil.copy2(src_path, dst_path)
+                    
+                    contents.append(strategy_file)
+            
+            strategies_dir = os.path.join(self.data_paths.data_root, "strategies")
+            if os.path.exists(strategies_dir) and os.path.isdir(strategies_dir):
+                for item in os.listdir(strategies_dir):
+                    if item.endswith('.db') or item.endswith('.json'):
+                        src = os.path.join(strategies_dir, item)
+                        dst = os.path.join(temp_dir, "strategy_pool", item)
+                        if os.path.isfile(src):
+                            shutil.copy2(src, dst)
+                            contents.append(f"strategies/{item}")
+            
+            backup_path = self._create_archive(temp_dir, date_str, BackupType.STRATEGY_POOL)
+            checksum = self._calculate_checksum(backup_path)
+            verified = self._verify_backup(backup_path)
+            backup_size = os.path.getsize(backup_path) if os.path.exists(backup_path) else 0
+            
+            self._update_backup_index(
+                date_str, BackupType.STRATEGY_POOL, backup_path, backup_size, contents, verified, checksum
+            )
+            
+            shutil.rmtree(temp_dir)
+            
+            duration = time.time() - start_time
+            
+            self.logger.info(f"策略库备份完成: {backup_path}")
+            
+            return BackupResult(
+                success=True,
+                backup_type=BackupType.STRATEGY_POOL,
+                backup_path=backup_path,
+                backup_size=backup_size,
+                files_count=len(contents),
+                duration_seconds=duration,
+                verified=verified,
+                details={"contents": contents, "checksum": checksum}
+            )
+            
+        except Exception as e:
+            duration = time.time() - start_time
+            self.logger.error(f"策略库备份失败: {e}")
+            return BackupResult(
+                success=False,
+                backup_type=BackupType.STRATEGY_POOL,
+                duration_seconds=duration,
+                error_message=str(e)
+            )
+    
+    def backup_environment(
+        self,
+        date: Optional[datetime] = None,
+        description: str = ""
+    ) -> BackupResult:
+        """
+        备份环境配置
+        
+        Args:
+            date: 备份日期
+            description: 备份描述
+            
+        Returns:
+            BackupResult: 备份结果
+        """
+        import time
+        start_time = time.time()
+        
+        date = date or datetime.now()
+        date_str = date.strftime('%Y-%m-%d')
+        
+        self.logger.info(f"开始备份环境配置: {date_str}")
+        
+        try:
+            contents = []
+            temp_dir = self._create_temp_backup_dir(date_str, BackupType.ENVIRONMENT)
+            
+            for env_file in self.ENV_FILES:
+                src_path = os.path.join(self.data_paths.data_root, "..", env_file)
+                
+                if os.path.exists(src_path):
+                    dst_path = os.path.join(temp_dir, "environment", env_file)
+                    Path(dst_path).parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src_path, dst_path)
+                    contents.append(env_file)
+            
+            for config_file in self.CONFIG_FILES:
+                src_path = os.path.join(self.data_paths.data_root, "..", config_file)
+                
+                if os.path.exists(src_path):
+                    dst_path = os.path.join(temp_dir, "environment", config_file)
+                    Path(dst_path).parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src_path, dst_path)
+                    contents.append(config_file)
+            
+            for proj_config in self.PROJECT_CONFIG_FILES:
+                src_path = os.path.join(self.data_paths.data_root, "..", proj_config)
+                
+                if os.path.exists(src_path):
+                    dst_path = os.path.join(temp_dir, "environment", proj_config.replace("/", "_"))
+                    Path(dst_path).parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src_path, dst_path)
+                    contents.append(proj_config)
+            
+            backup_path = self._create_archive(temp_dir, date_str, BackupType.ENVIRONMENT)
+            checksum = self._calculate_checksum(backup_path)
+            verified = self._verify_backup(backup_path)
+            backup_size = os.path.getsize(backup_path) if os.path.exists(backup_path) else 0
+            
+            self._update_backup_index(
+                date_str, BackupType.ENVIRONMENT, backup_path, backup_size, contents, verified, checksum
+            )
+            
+            shutil.rmtree(temp_dir)
+            self._cleanup_old_backups(BackupType.ENVIRONMENT)
+            
+            duration = time.time() - start_time
+            
+            self.logger.info(f"环境配置备份完成: {backup_path}")
+            
+            return BackupResult(
+                success=True,
+                backup_type=BackupType.ENVIRONMENT,
+                backup_path=backup_path,
+                backup_size=backup_size,
+                files_count=len(contents),
+                duration_seconds=duration,
+                verified=verified,
+                details={"contents": contents, "checksum": checksum}
+            )
+            
+        except Exception as e:
+            duration = time.time() - start_time
+            self.logger.error(f"环境配置备份失败: {e}")
+            return BackupResult(
+                success=False,
+                backup_type=BackupType.ENVIRONMENT,
+                duration_seconds=duration,
+                error_message=str(e)
+            )
+    
+    def backup_full(
+        self,
+        date: Optional[datetime] = None,
+        description: str = ""
+    ) -> BackupResult:
+        """
+        完整备份（所有数据）
+        
+        Args:
+            date: 备份日期
+            description: 备份描述
+            
+        Returns:
+            BackupResult: 备份结果
+        """
+        import time
+        start_time = time.time()
+        
+        date = date or datetime.now()
+        date_str = date.strftime('%Y-%m-%d')
+        
+        self.logger.info(f"开始完整备份: {date_str}")
+        
+        try:
+            contents = []
+            temp_dir = self._create_temp_backup_dir(date_str, BackupType.FULL)
+            
+            core_files = self._backup_core_assets(temp_dir)
+            contents.extend(core_files)
+            
+            business_files = self._backup_business_data(temp_dir)
+            contents.extend(business_files)
+            
+            report_files = self._backup_reports(temp_dir)
+            contents.extend(report_files)
+            
+            for env_file in self.ENV_FILES:
+                src_path = os.path.join(self.data_paths.data_root, "..", env_file)
+                if os.path.exists(src_path):
+                    dst_path = os.path.join(temp_dir, "environment", env_file)
+                    Path(dst_path).parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src_path, dst_path)
+                    contents.append(env_file)
+            
+            for config_file in self.CONFIG_FILES:
+                src_path = os.path.join(self.data_paths.data_root, "..", config_file)
+                if os.path.exists(src_path):
+                    dst_path = os.path.join(temp_dir, "config", config_file)
+                    Path(dst_path).parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src_path, dst_path)
+                    contents.append(config_file)
+            
+            for proj_config in self.PROJECT_CONFIG_FILES:
+                src_path = os.path.join(self.data_paths.data_root, "..", proj_config)
+                if os.path.exists(src_path):
+                    dst_path = os.path.join(temp_dir, "config", proj_config.replace("/", "_"))
+                    Path(dst_path).parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src_path, dst_path)
+                    contents.append(proj_config)
+            
+            backup_path = self._create_archive(temp_dir, date_str, BackupType.FULL)
+            checksum = self._calculate_checksum(backup_path)
+            verified = self._verify_backup(backup_path)
+            backup_size = os.path.getsize(backup_path) if os.path.exists(backup_path) else 0
+            
+            self._update_backup_index(
+                date_str, BackupType.FULL, backup_path, backup_size, contents, verified, checksum
+            )
+            
+            shutil.rmtree(temp_dir)
+            self._cleanup_old_backups(BackupType.FULL)
+            
+            duration = time.time() - start_time
+            
+            self.logger.info(
+                f"完整备份完成: {backup_path}, 大小: {backup_size/1024/1024:.2f}MB, "
+                f"文件数: {len(contents)}, 耗时: {duration:.2f}秒"
+            )
+            
+            return BackupResult(
+                success=True,
+                backup_type=BackupType.FULL,
+                backup_path=backup_path,
+                backup_size=backup_size,
+                files_count=len(contents),
+                duration_seconds=duration,
+                verified=verified,
+                details={"contents": contents[:50], "checksum": checksum}
+            )
+            
+        except Exception as e:
+            duration = time.time() - start_time
+            self.logger.error(f"完整备份失败: {e}")
+            return BackupResult(
+                success=False,
+                backup_type=BackupType.FULL,
+                duration_seconds=duration,
+                error_message=str(e)
+            )
+    
+    def backup_selective(
+        self,
+        include_reports: bool = False,
+        include_factor_pool: bool = False,
+        include_strategy_pool: bool = False,
+        include_environment: bool = False,
+        include_config: bool = False,
+        include_business: bool = False,
+        include_core: bool = False,
+        date: Optional[datetime] = None,
+        description: str = ""
+    ) -> Dict[str, BackupResult]:
+        """
+        选择性备份
+        
+        Args:
+            include_reports: 是否包含报告
+            include_factor_pool: 是否包含因子库
+            include_strategy_pool: 是否包含策略库
+            include_environment: 是否包含环境配置
+            include_config: 是否包含配置文件
+            include_business: 是否包含业务数据
+            include_core: 是否包含核心资产
+            date: 备份日期
+            description: 备份描述
+            
+        Returns:
+            Dict[str, BackupResult]: 各项备份结果
+        """
+        results = {}
+        
+        if include_reports:
+            results['reports'] = self.backup_reports(date, description)
+        
+        if include_factor_pool:
+            results['factor_pool'] = self.backup_factor_pool(date, description)
+        
+        if include_strategy_pool:
+            results['strategy_pool'] = self.backup_strategy_pool(date, description)
+        
+        if include_environment:
+            results['environment'] = self.backup_environment(date, description)
+        
+        if include_config or include_business or include_core:
+            result = self.backup(
+                backup_type=BackupType.DAILY,
+                date=date,
+                include_core=include_core,
+                include_business=include_business,
+                include_reports=False
+            )
+            results['daily'] = result
+        
+        success_count = sum(1 for r in results.values() if r.success)
+        self.logger.info(f"选择性备份完成: {success_count}/{len(results)} 成功")
+        
+        return results

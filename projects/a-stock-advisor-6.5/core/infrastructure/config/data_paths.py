@@ -10,6 +10,29 @@ from typing import Dict, Optional
 from dataclasses import dataclass
 
 
+def normalize_stock_code(stock_code: str) -> str:
+    """
+    标准化股票代码，提取纯6位数字代码
+    
+    支持输入格式:
+    - 'sh.000001', 'sz.000001' -> '000001'
+    - 'sh000001', 'sz000001' -> '000001'
+    - '000001.XSHG', '000001.XSHE' -> '000001'
+    - '000001.SS', '000001.SZ' -> '000001'
+    - '000001' -> '000001'
+    """
+    if not stock_code:
+        return stock_code
+    
+    import re
+    code = str(stock_code).strip()
+    code = re.sub(r'^(sh|sz|SH|SZ)\.', '', code)
+    code = re.sub(r'^(sh|sz|SH|SZ)', '', code)
+    code = re.sub(r'\.(XSHG|XSHE|SS|SZ)$', '', code, flags=re.IGNORECASE)
+    
+    return code
+
+
 @dataclass
 class DataPathConfig:
     """
@@ -70,6 +93,11 @@ class DataPathConfig:
     def financials_path(self) -> str:
         """财务数据路径"""
         return os.path.join(self.master_path, "financials")
+    
+    @property
+    def northbound_path(self) -> str:
+        """北向资金数据路径"""
+        return os.path.join(self.master_path, "northbound")
     
     @property
     def reference_path(self) -> str:
@@ -144,6 +172,7 @@ class DataPathConfig:
             self.stocks_hourly_path,
             self.stocks_minute_path,
             self.financials_path,
+            self.northbound_path,
             self.reference_path,
             # 缓存目录
             self.cache_path,
@@ -177,6 +206,8 @@ class DataPathConfig:
         Returns:
             str: 文件路径
         """
+        normalized_code = normalize_stock_code(stock_code)
+        
         if data_type == "daily":
             base_path = self.stocks_daily_path
         elif data_type == "hourly":
@@ -186,7 +217,7 @@ class DataPathConfig:
         else:
             raise ValueError(f"未知的数据类型: {data_type}")
         
-        return os.path.join(base_path, f"{stock_code}.parquet")
+        return os.path.join(base_path, f"{normalized_code}.parquet")
     
     def get_factor_path(self, factor_id: str) -> str:
         """

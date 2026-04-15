@@ -11,6 +11,7 @@
 - report_generator: 日报生成器
 - notifier: 日报推送
 - backup: 数据备份
+- ai_pipeline: AI增强每日任务管线
 """
 
 from .scheduler import DailyScheduler, TaskResult, TaskStatus
@@ -20,6 +21,14 @@ from .signal_generator import DailySignalGenerator, SignalGenResult
 from .report_generator import DailyReportGenerator, ReportResult
 from .notifier import DailyNotifier, NotifyResult, PreCheckStatus
 from .backup import DailyBackup, BackupResult
+from .ai_pipeline import (
+    step2_factor_calc_ai,
+    step3_signal_gen_ai,
+    step4_strategy_exec_ai,
+    step7_trading_ai,
+    create_ai_pipeline_scheduler,
+    run_ai_pipeline
+)
 
 __all__ = [
     'DailyScheduler',
@@ -38,4 +47,10 @@ __all__ = [
     'PreCheckStatus',
     'DailyBackup',
     'BackupResult',
+    'step2_factor_calc_ai',
+    'step3_signal_gen_ai',
+    'step4_strategy_exec_ai',
+    'step7_trading_ai',
+    'create_ai_pipeline_scheduler',
+    'run_ai_pipeline',
 ]

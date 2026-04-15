@@ -18,8 +18,11 @@ from .registry import (
     RebalanceFrequency,
     get_strategy_registry
 )
-from .selector import StockSelector, SelectionResult, get_stock_selector
+from .alpha_generator import get_alpha_generator
 from ..infrastructure.exceptions import StrategyException
+from ..infrastructure.logging import get_logger
+
+logger = get_logger("strategy.backtester")
 
 
 class BacktestMode(Enum):
@@ -377,15 +380,19 @@ class StrategyBacktester:
         self,
         initial_capital: float = 1000000.0,
         commission_rate: float = 0.0003,
-        slippage: float = 0.001
+        slippage: float = 0.001,
+        stamp_duty: float = 0.001,
+        filter_limit: bool = True
     ):
         """初始化策略回测器"""
         self.initial_capital = initial_capital
         self.commission_rate = commission_rate
         self.slippage = slippage
+        self.stamp_duty = stamp_duty
+        self.filter_limit = filter_limit
         
         self._registry = get_strategy_registry()
-        self._selector = get_stock_selector()
+        self._alpha_generator = get_alpha_generator()
         self._simulator = PortfolioSimulator(
             initial_capital, commission_rate, slippage
         )
@@ -476,20 +483,72 @@ class StrategyBacktester:
             
             current_positions = []
             
-            for date in dates:
-                prices = self._get_prices(price_data, date)
+            stock_data = {}
+            if 'stock_code' in price_data.columns:
+                for stock_code, group in price_data.groupby('stock_code'):
+                    stock_data[stock_code] = group.copy()
+            
+            date_data = {}
+            if 'date' in price_data.columns:
+                for d, group in price_data.groupby('date'):
+                    date_data[d] = group
+            
+            factor_data_by_date = {}
+            if factor_data:
+                print("  预处理因子数据...")
+                for factor_id, df in factor_data.items():
+                    if 'date' in df.columns:
+                        for d, group in df.groupby('date'):
+                            if d not in factor_data_by_date:
+                                factor_data_by_date[d] = {}
+                            factor_data_by_date[d][factor_id] = group
+                print(f"  因子数据预处理完成: {len(factor_data_by_date)} 个交易日, {len(factor_data)} 个因子")
+            
+            from .factor_combiner import FactorCombiner
+            combiner = FactorCombiner()
+            combination_result = combiner.combine(strategy_meta.factor_config)
+            if combination_result.success:
+                factor_ids_in_data = set(factor_data.keys()) if factor_data else set()
+                factor_ids_in_result = set(combination_result.factor_ids)
+                
+                if factor_ids_in_data and factor_ids_in_result:
+                    common_factors = factor_ids_in_data & factor_ids_in_result
+                    if common_factors:
+                        precomputed_factors = {
+                            'factor_ids': list(common_factors),
+                            'weights': [1.0/len(common_factors)] * len(common_factors)
+                        }
+                    else:
+                        precomputed_factors = {
+                            'factor_ids': list(factor_ids_in_data),
+                            'weights': [1.0/len(factor_ids_in_data)] * len(factor_ids_in_data)
+                        }
+                else:
+                    precomputed_factors = None
+            else:
+                precomputed_factors = None
+            
+            print(f"  开始回测循环，共 {len(dates)} 个交易日...")
+            for idx, date in enumerate(dates):
+                if idx % 100 == 0:
+                    print(f"    回测进度: {idx+1}/{len(dates)}")
+                
+                prices = self._get_prices_fast(date_data, date)
                 
                 self._simulator.update_prices(prices)
                 
                 if date in rebalance_dates:
-                    selection_result = self._selector.select(
-                        strategy_meta,
+                    alpha_result = self._alpha_generator.generate(
+                        strategy_meta.factor_config,
                         date,
-                        factor_data
+                        factor_data,
+                        stock_data=stock_data if stock_data else None,
+                        factor_data_by_date=factor_data_by_date if factor_data_by_date else None,
+                        precomputed_factors=precomputed_factors
                     )
                     
-                    if selection_result.success:
-                        new_stocks = [s.stock_code for s in selection_result.selections]
+                    if alpha_result.success and alpha_result.ranked_stocks:
+                        new_stocks = alpha_result.ranked_stocks[:strategy_meta.max_positions]
                         
                         for stock in current_positions:
                             if stock not in new_stocks and stock in prices:
@@ -497,12 +556,12 @@ class StrategyBacktester:
                         
                         position_value = self._simulator.get_total_value() / strategy_meta.max_positions
                         
-                        for selection in selection_result.selections:
-                            if selection.stock_code in prices:
-                                if selection.stock_code not in current_positions:
+                        for stock in new_stocks:
+                            if stock in prices:
+                                if stock not in current_positions:
                                     self._simulator.buy(
-                                        selection.stock_code,
-                                        prices[selection.stock_code],
+                                        stock,
+                                        prices[stock],
                                         position_value,
                                         date
                                     )
@@ -537,6 +596,27 @@ class StrategyBacktester:
             )
             
             self._registry.update_backtest_performance(strategy_id, performance)
+            
+            from ..infrastructure.quality_gate import get_quality_gate, GateStage
+            
+            quality_gate = get_quality_gate()
+            
+            validation_data = {
+                'annual_return': annual_return,
+                'sharpe_ratio': sharpe_ratio,
+                'max_drawdown': max_drawdown,
+                'win_rate': win_rate,
+                'total_trades': len(trades)
+            }
+            
+            gate_result = quality_gate.validate(GateStage.BACKTEST_VALIDATION, validation_data)
+            
+            backtest_passed = gate_result.passed
+            
+            if not gate_result.passed:
+                logger.warning(f"策略 {strategy_id} 回测验证未通过:")
+                for failure in gate_result.blocking_failures:
+                    logger.warning(f"  {failure.message}")
             
             return BacktestResult(
                 strategy_id=strategy_id,
@@ -592,6 +672,24 @@ class StrategyBacktester:
         elif freq == RebalanceFrequency.QUARTERLY:
             return dates[::60]
         return dates[::5]
+    
+    def _get_prices_fast(
+        self,
+        date_data: Dict[str, pd.DataFrame],
+        date: str
+    ) -> Dict[str, float]:
+        """快速获取指定日期的价格（使用预分组数据）"""
+        day_data = date_data.get(date)
+        if day_data is None or day_data.empty:
+            return {}
+        
+        price_col = 'close' if 'close' in day_data.columns else 'price'
+        stock_col = 'stock_code' if 'stock_code' in day_data.columns else 'code'
+        
+        if price_col in day_data.columns and stock_col in day_data.columns:
+            return dict(zip(day_data[stock_col], day_data[price_col]))
+        
+        return {}
     
     def _get_prices(
         self,
@@ -656,12 +754,16 @@ _default_backtester: Optional[StrategyBacktester] = None
 def get_strategy_backtester(
     initial_capital: float = 1000000.0,
     commission_rate: float = 0.0003,
-    slippage: float = 0.001
+    slippage: float = 0.001,
+    stamp_duty: float = 0.001,
+    filter_limit: bool = True
 ) -> StrategyBacktester:
     """获取全局策略回测器实例"""
     global _default_backtester
     if _default_backtester is None:
-        _default_backtester = StrategyBacktester(initial_capital, commission_rate, slippage)
+        _default_backtester = StrategyBacktester(
+            initial_capital, commission_rate, slippage, stamp_duty, filter_limit
+        )
     return _default_backtester
 
 

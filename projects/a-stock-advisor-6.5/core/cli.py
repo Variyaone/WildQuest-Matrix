@@ -1,5 +1,5 @@
 """
-A股量化投顾系统 - 主CLI入口
+WildQuest Matrix - 主CLI入口
 
 Usage:
     asa              启动交互式菜单
@@ -17,7 +17,7 @@ def main():
         return 0
     
     if "--version" in sys.argv or "-v" in sys.argv:
-        print("A股量化投顾系统 v6.5.0")
+        print("WildQuest Matrix v6.5.0")
         return 0
     
     from core.main import main as interactive_main

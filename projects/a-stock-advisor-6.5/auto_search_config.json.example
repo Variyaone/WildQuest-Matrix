@@ -1,0 +1,35 @@
+{
+  "enabled": true,
+  "schedule": {
+    "daily": {
+      "enabled": true,
+      "time": "09:00",
+      "strategy": "balanced",
+      "keyword_count": 5,
+      "max_papers": 10
+    },
+    "weekly": {
+      "enabled": true,
+      "day": "monday",
+      "time": "08:00",
+      "strategy": "gap",
+      "keyword_count": 8,
+      "max_papers": 20
+    },
+    "monthly": {
+      "enabled": true,
+      "day": 1,
+      "time": "07:00",
+      "strategy": "hot",
+      "keyword_count": 10,
+      "max_papers": 30
+    }
+  },
+  "focus_areas": ["value", "momentum", "quality", "liquidity"],
+  "include_china": true,
+  "auto_import": true,
+  "notification": {
+    "enabled": false,
+    "webhook": ""
+  }
+}

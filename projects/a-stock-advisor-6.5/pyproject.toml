@@ -3,16 +3,16 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "a-stock-advisor"
+name = "wildquest-matrix"
 version = "6.5.0"
-description = "A股量化投顾系统 - 数据驱动的智能投资决策平台"
+description = "WildQuest Matrix - A股量化投顾系统，数据驱动的智能投资决策平台"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "Quant Team", email = "quant@example.com"}
+    {name = "Variya"}
 ]
 maintainers = [
-    {name = "Quant Team", email = "quant@example.com"}
+    {name = "Variya"}
 ]
 keywords = [
     "quantitative-finance",
@@ -72,6 +72,14 @@ ml = [
     "xgboost>=2.0.0",
     "torch>=2.0.0",
 ]
+qlib = [
+    "pyqlib>=0.9.0",
+    "lightgbm>=4.0.0",
+    "torch>=2.0.0",
+]
+rdagent = [
+    "rdagent>=0.0.1",
+]
 viz = [
     "matplotlib>=3.6.0",
     "seaborn>=0.12.0",
@@ -89,7 +97,7 @@ dev = [
     "pre-commit>=3.0.0",
 ]
 all = [
-    "a-stock-advisor[data,backtest,optimization,ml,viz,dev]",
+    "a-stock-advisor[data,backtest,optimization,ml,qlib,rdagent,viz,dev]",
 ]
 
 [project.urls]

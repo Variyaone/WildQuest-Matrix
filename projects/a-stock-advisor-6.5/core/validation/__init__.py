@@ -9,6 +9,14 @@ from .trust_manager import TrustManager, get_trust_manager, reset_trust_manager
 from .reporter import CheckReporter
 from .contracts import CheckResult, TrustLevel, TrustLevel
 from .freshness import FreshnessPolicy, ExecutionMode, get_freshness_policy, set_execution_mode
+from .pre_push_checker import (
+    PrePushChecker,
+    PrePushCheckResult,
+    CheckItem,
+    CheckSeverity,
+    get_pre_push_checker,
+    reset_pre_push_checker
+)
 
 __all__ = [
     'PreCheckManager',
@@ -24,4 +32,10 @@ __all__ = [
     'ExecutionMode',
     'get_freshness_policy',
     'set_execution_mode',
+    'PrePushChecker',
+    'PrePushCheckResult',
+    'CheckItem',
+    'CheckSeverity',
+    'get_pre_push_checker',
+    'reset_pre_push_checker',
 ]

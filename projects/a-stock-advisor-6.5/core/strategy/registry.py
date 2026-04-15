@@ -75,6 +75,8 @@ class StrategyPerformance:
     information_ratio: float = 0.0
     beta: float = 1.0
     alpha: float = 0.0
+    excess_return: float = 0.0
+    volatility: float = 0.0
     
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -84,20 +86,7 @@ class StrategyPerformance:
         return cls(**{k: v for k, v in data.items() if hasattr(cls, k)})
 
 
-@dataclass
-class SignalConfig:
-    """信号配置"""
-    signal_ids: List[str] = field(default_factory=list)
-    weights: List[float] = field(default_factory=list)
-    combination_method: str = "weighted_sum"
-    min_signal_strength: str = "medium"
-    
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SignalConfig":
-        return cls(**{k: v for k, v in data.items() if hasattr(cls, k)})
+from .factor_combiner import FactorCombinationConfig
 
 
 @dataclass
@@ -107,7 +96,7 @@ class StrategyMetadata:
     name: str
     description: str
     strategy_type: StrategyType
-    signals: SignalConfig
+    factor_config: FactorCombinationConfig
     rebalance_freq: RebalanceFrequency
     max_positions: int
     risk_params: RiskParams
@@ -129,7 +118,7 @@ class StrategyMetadata:
             "name": self.name,
             "description": self.description,
             "strategy_type": self.strategy_type.value,
-            "signals": self.signals.to_dict(),
+            "factor_config": self.factor_config.to_dict(),
             "rebalance_freq": self.rebalance_freq.value,
             "max_positions": self.max_positions,
             "risk_params": self.risk_params.to_dict(),
@@ -166,7 +155,7 @@ class StrategyMetadata:
                 rebalance_freq = rf
                 break
         
-        signals = SignalConfig.from_dict(data.get("signals", {}))
+        factor_config = FactorCombinationConfig.from_dict(data.get("factor_config", {}))
         risk_params = RiskParams.from_dict(data.get("risk_params", {}))
         
         backtest_perf = None
@@ -182,7 +171,7 @@ class StrategyMetadata:
             name=data["name"],
             description=data["description"],
             strategy_type=strategy_type,
-            signals=signals,
+            factor_config=factor_config,
             rebalance_freq=rebalance_freq,
             max_positions=data.get("max_positions", 20),
             risk_params=risk_params,
@@ -263,7 +252,7 @@ class StrategyRegistry:
         name: str,
         description: str,
         strategy_type: StrategyType,
-        signals: SignalConfig,
+        factor_config: FactorCombinationConfig,
         rebalance_freq: RebalanceFrequency,
         max_positions: int,
         risk_params: RiskParams,
@@ -280,7 +269,7 @@ class StrategyRegistry:
             name=name,
             description=description,
             strategy_type=strategy_type,
-            signals=signals,
+            factor_config=factor_config,
             rebalance_freq=rebalance_freq,
             max_positions=max_positions,
             risk_params=risk_params,

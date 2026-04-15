@@ -217,6 +217,8 @@ class SignalGenerator:
         if isinstance(signal, str):
             signal_meta = self._registry.get(signal)
             if signal_meta is None:
+                signal_meta = self._registry.get_by_name(signal)
+            if signal_meta is None:
                 return SignalGenerationResult(
                     success=False,
                     signal_id=signal,

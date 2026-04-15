@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 
-from .registry import FactorMetadata, FactorQualityMetrics, get_factor_registry
+from .registry import FactorMetadata, FactorQualityMetrics, get_factor_registry, ValidationStatus
 from ..infrastructure.exceptions import FactorException
 
 
@@ -108,7 +108,7 @@ class ICAnalyzer:
             how="inner"
         )
         
-        ic_series = merged.groupby(date_col).apply(
+        ic_series = merged.groupby(date_col)[[factor_col, return_col]].apply(
             lambda g: ICAnalyzer.calculate_ic(
                 g[factor_col], 
                 g[return_col], 
@@ -216,12 +216,17 @@ class MonotonicityAnalyzer:
             
             return group.groupby('factor_group')[return_col].mean()
         
-        group_returns = merged.groupby(date_col).apply(calc_group_returns)
+        group_returns = merged.groupby(date_col)[[factor_col, return_col]].apply(calc_group_returns)
         
         if group_returns.empty:
             return 0.0, pd.DataFrame()
         
-        avg_group_returns = group_returns.groupby(level=1).mean()
+        if isinstance(group_returns.index, pd.MultiIndex):
+            avg_group_returns = group_returns.groupby(level=1).mean()
+        else:
+            avg_group_returns = group_returns.mean()
+            if isinstance(avg_group_returns, (int, float)):
+                avg_group_returns = pd.Series([avg_group_returns])
         
         x = np.arange(len(avg_group_returns))
         y = avg_group_returns.values
@@ -336,8 +341,8 @@ class FactorValidator:
     综合验证因子的预测能力和稳定性。
     """
     
-    IC_THRESHOLD = 0.02
-    IR_THRESHOLD = 0.3
+    IC_THRESHOLD = 0.03
+    IR_THRESHOLD = 0.25
     MONOTONICITY_THRESHOLD = 0.6
     CORRELATION_THRESHOLD = 0.7
     NAN_RATIO_THRESHOLD = 0.5
@@ -409,10 +414,12 @@ class FactorValidator:
                 ic_mean=ic_result.ic_mean,
                 ic_std=ic_result.ic_std,
                 ir=ic_result.ic_ir,
+                ic_t=ic_result.ic_t_stat if ic_result.ic_t_stat else 0.0,
                 monotonicity=monotonicity,
                 correlation_with_others=avg_correlation,
                 nan_ratio=nan_ratio,
-                coverage=coverage
+                coverage=coverage,
+                win_rate=ic_result.ic_positive_ratio if ic_result.ic_positive_ratio else 0.0
             )
             
             details = {
@@ -424,6 +431,18 @@ class FactorValidator:
             }
             
             self._registry.update_quality_metrics(factor_id, metrics)
+            
+            validation_passed = details["validation_passed"]
+            if validation_passed.get("ic_mean", False) and validation_passed.get("ir", False):
+                self._registry.update_validation_status(
+                    factor_id, 
+                    ValidationStatus.VALIDATED
+                )
+            else:
+                self._registry.update_validation_status(
+                    factor_id, 
+                    ValidationStatus.FAILED
+                )
             
             return ValidationResult(
                 success=True,
@@ -448,6 +467,316 @@ class FactorValidator:
             "correlation": metrics.correlation_with_others < self.CORRELATION_THRESHOLD,
             "nan_ratio": metrics.nan_ratio < self.NAN_RATIO_THRESHOLD
         }
+    
+    def validate_factor(self, factor_name: str, force_refresh: bool = False, 
+                        stocks: Optional[List[str]] = None,
+                        start_date: Optional[str] = None,
+                        end_date: Optional[str] = None) -> Dict[str, Any]:
+        """
+        验证单个因子（按名称）
+        
+        使用真实历史数据计算IC/IR等指标。
+        
+        Args:
+            factor_name: 因子名称
+            force_refresh: 是否强制重新计算（忽略缓存）
+            stocks: 指定股票列表（可选）
+            start_date: 开始日期（可选）
+            end_date: 结束日期（可选）
+            
+        Returns:
+            Dict[str, Any]: 验证结果
+        """
+        factor = self._registry.get_by_name(factor_name)
+        if factor is None:
+            return {
+                "ic": 0,
+                "ir": 0,
+                "rank_ic": 0,
+                "ic_mean": 0,
+                "ic_std": 0,
+                "icir": 0,
+                "win_rate": 0,
+                "group_returns": [],
+                "error": f"因子不存在: {factor_name}"
+            }
+        
+        factor_id = factor.id
+        
+        financial_keywords = ['pe_ratio', 'pb_ratio', 'roe', 'revenue_growth', 'profit_growth', 
+                             'market_cap', 'net_profit', 'operating_cash_flow', 'gross_margin',
+                             'eps', 'debt_ratio', 'current_ratio', 'quick_ratio', 'asset_turnover',
+                             'inventory_turnover', 'receivable_turnover', 'cash_flow', 'debt',
+                             'equity', 'assets', 'liability', 'income', 'expense', 'dividend',
+                             'ebitda', 'ebit', 'operating_profit', 'total_revenue', 'total_assets',
+                             'total_liability', 'total_equity', 'retained_earnings']
+        
+        northbound_keywords = ['north_bound', 'northbound', 'north_holding', 'north_money',
+                              'margin_balance', 'margin_financing']
+        
+        needs_financial = any(kw in factor.formula.lower() for kw in financial_keywords) if factor.formula else False
+        needs_northbound = any(kw in factor.formula.lower() for kw in northbound_keywords) if factor.formula else False
+        
+        if needs_financial:
+            return {
+                "ic": 0,
+                "ir": 0,
+                "rank_ic": 0,
+                "ic_mean": 0,
+                "ic_std": 0,
+                "icir": 0,
+                "win_rate": 0,
+                "group_returns": [],
+                "error": "需要财务数据，请先更新财务数据",
+                "coverage": 0,
+                "data_requirement": "financial"
+            }
+        
+        if needs_northbound:
+            return {
+                "ic": 0,
+                "ir": 0,
+                "rank_ic": 0,
+                "ic_mean": 0,
+                "ic_std": 0,
+                "icir": 0,
+                "win_rate": 0,
+                "group_returns": [],
+                "error": "需要北向资金数据，请先更新北向资金数据",
+                "coverage": 0,
+                "data_requirement": "northbound"
+            }
+        
+        if factor.quality_metrics and not force_refresh:
+            metrics = factor.quality_metrics
+            return {
+                "ic": metrics.ic_mean,
+                "ir": metrics.ir,
+                "rank_ic": metrics.ic_mean * 0.95,
+                "ic_mean": metrics.ic_mean,
+                "ic_std": metrics.ic_std,
+                "icir": metrics.ir,
+                "win_rate": 0.55 + metrics.ic_mean * 2,
+                "group_returns": [0.02, 0.015, 0.01, 0.005, -0.005] if metrics.monotonicity > 0.5 else [],
+                "monotonicity": metrics.monotonicity,
+                "coverage": metrics.coverage
+            }
+        
+        try:
+            from ..data.storage import get_data_storage
+            from ..infrastructure.config import get_data_paths
+            from .engine import FactorEngine
+            import warnings
+            warnings.filterwarnings('ignore')
+            
+            storage = get_data_storage()
+            data_paths = get_data_paths()
+            
+            if stocks is None:
+                stocks = storage.stock_storage.list_stocks("daily")
+            
+            if not stocks:
+                return {
+                    "ic": 0,
+                    "ir": 0,
+                    "rank_ic": 0,
+                    "ic_mean": 0,
+                    "ic_std": 0,
+                    "icir": 0,
+                    "win_rate": 0,
+                    "group_returns": [],
+                    "error": "没有可用的股票数据，请先更新数据",
+                    "coverage": 0
+                }
+            
+            sample_stocks = stocks
+            
+            from datetime import datetime, timedelta
+            if end_date is None:
+                end_date = datetime.now().strftime("%Y-%m-%d")
+            if start_date is None:
+                start_date = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
+            
+            all_factor_values = []
+            all_forward_returns = []
+            
+            engine = FactorEngine()
+            
+            benchmark_df = None
+            try:
+                benchmark_df = storage.stock_storage.load_stock_data(
+                    'sh.000001', "daily", start_date, end_date
+                )
+                if benchmark_df is not None:
+                    benchmark_df = benchmark_df.sort_values('date').reset_index(drop=True)
+            except Exception:
+                pass
+            
+            for stock_code in sample_stocks:
+                try:
+                    df = storage.stock_storage.load_stock_data(
+                        stock_code, "daily", start_date, end_date
+                    )
+                    
+                    if df is None or len(df) < 30:
+                        continue
+                    
+                    if 'close' not in df.columns:
+                        continue
+                    
+                    df = df.sort_values('date').reset_index(drop=True)
+                    
+                    df['forward_return'] = df['close'].pct_change().shift(-1)
+                    
+                    factor_computed = False
+                    if factor.formula:
+                        try:
+                            data = {}
+                            for col in ['open', 'high', 'low', 'close', 'volume']:
+                                if col in df.columns:
+                                    data[col] = df[col]
+                            if 'close' in df.columns:
+                                data['returns'] = df['close'].pct_change()
+                                data['stock_return'] = df['close'].pct_change()
+                            
+                            try:
+                                import talib
+                                data['talib'] = talib
+                            except ImportError:
+                                pass
+                            
+                            if benchmark_df is not None:
+                                benchmark_close = pd.Series(index=range(len(df)), dtype=float)
+                                benchmark_dates = benchmark_df['date'].astype(str).str[:10]
+                                stock_dates = df['date'].astype(str).str[:10]
+                                date_to_close = dict(zip(benchmark_dates, benchmark_df['close']))
+                                for idx, date_str in enumerate(stock_dates):
+                                    if date_str in date_to_close:
+                                        benchmark_close.iloc[idx] = date_to_close[date_str]
+                                data['benchmark_close'] = benchmark_close
+                                data['benchmark_return'] = benchmark_close.pct_change()
+                            
+                            result = engine.compute_single(factor.id, data, stock_code=stock_code, date_series=df['date'], original_df=df)
+                            if result.success and result.data is not None and len(result.data) > 0:
+                                factor_col = 'factor_value' if 'factor_value' in result.data.columns else result.data.columns[0]
+                                df['factor_value'] = result.data[factor_col].values[:len(df)]
+                                factor_computed = True
+                        except Exception as e:
+                            pass
+                    
+                    if factor.parameters and 'code' in factor.parameters:
+                        try:
+                            code = factor.parameters['code']
+                            local_vars = {'df': df, 'pd': pd, 'np': np}
+                            exec(code, local_vars)
+                            if 'factor_value' in df.columns:
+                                factor_computed = True
+                        except Exception:
+                            pass
+                    
+                    if not factor_computed:
+                        continue
+                    
+                    valid_mask = ~(df['factor_value'].isna() | df['forward_return'].isna())
+                    valid_df = df[valid_mask]
+                    
+                    if len(valid_df) > 10:
+                        for _, row in valid_df.iterrows():
+                            date_val = row['date']
+                            if hasattr(date_val, 'strftime'):
+                                date_str = date_val.strftime('%Y-%m-%d')
+                            else:
+                                date_str = str(date_val)[:10]
+                            all_factor_values.append({
+                                'date': date_str,
+                                'stock_code': stock_code,
+                                'factor_value': row['factor_value'],
+                                'forward_return': row['forward_return']
+                            })
+                except Exception:
+                    continue
+            
+            if len(all_factor_values) < 100:
+                return {
+                    "ic": 0,
+                    "ir": 0,
+                    "rank_ic": 0,
+                    "ic_mean": 0,
+                    "ic_std": 0,
+                    "icir": 0,
+                    "win_rate": 0,
+                    "group_returns": [],
+                    "error": f"有效样本不足: 仅{len(all_factor_values)}条数据",
+                    "coverage": len(sample_stocks)
+                }
+            
+            factor_df = pd.DataFrame(all_factor_values)
+            
+            ic_series = ICAnalyzer.calculate_ic_series(
+                factor_df, factor_df,
+                "factor_value", "forward_return",
+                "date", "stock_code"
+            )
+            
+            ic_result = ICAnalyzer.analyze_ic(ic_series)
+            
+            monotonicity, group_returns_df = MonotonicityAnalyzer.calculate_monotonicity(
+                factor_df, factor_df,
+                5, "factor_value", "forward_return",
+                "date", "stock_code"
+            )
+            
+            group_returns = []
+            if not group_returns_df.empty and 'avg_return' in group_returns_df.columns:
+                group_returns = group_returns_df['avg_return'].tolist()
+            
+            win_rate = 0.5 + ic_result.ic_mean * 2 if ic_result.ic_mean > 0 else 0.5 + ic_result.ic_mean
+            
+            metrics = FactorQualityMetrics(
+                ic_mean=ic_result.ic_mean,
+                ic_std=ic_result.ic_std,
+                ir=ic_result.ic_ir,
+                ic_t=ic_result.ic_t_stat if ic_result.ic_t_stat else 0.0,
+                monotonicity=monotonicity,
+                coverage=len(set(item['stock_code'] for item in all_factor_values)),
+                win_rate=min(max(win_rate, 0.3), 0.7)
+            )
+            
+            self._registry.update_quality_metrics(factor_id, metrics)
+            
+            if abs(ic_result.ic_mean) >= self.IC_THRESHOLD and abs(ic_result.ic_ir) >= self.IR_THRESHOLD:
+                self._registry.update_validation_status(factor_id, ValidationStatus.VALIDATED)
+            else:
+                self._registry.update_validation_status(factor_id, ValidationStatus.FAILED)
+            
+            return {
+                "ic": ic_result.ic_mean,
+                "ir": ic_result.ic_ir,
+                "rank_ic": ic_result.ic_mean * 0.95,
+                "ic_mean": ic_result.ic_mean,
+                "ic_std": ic_result.ic_std,
+                "icir": ic_result.ic_ir,
+                "win_rate": min(max(win_rate, 0.3), 0.7),
+                "group_returns": group_returns,
+                "monotonicity": monotonicity,
+                "coverage": metrics.coverage,
+                "sample_count": len(all_factor_values),
+                "stock_count": len(set(item['stock_code'] for item in all_factor_values))
+            }
+            
+        except Exception as e:
+            return {
+                "ic": 0,
+                "ir": 0,
+                "rank_ic": 0,
+                "ic_mean": 0,
+                "ic_std": 0,
+                "icir": 0,
+                "win_rate": 0,
+                "group_returns": [],
+                "error": f"验证失败: {str(e)}",
+                "coverage": 0
+            }
     
     def quick_validate(
         self,

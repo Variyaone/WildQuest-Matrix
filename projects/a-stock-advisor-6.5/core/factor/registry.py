@@ -34,6 +34,15 @@ class FactorStatus(Enum):
     DEPRECATED = "deprecated"
 
 
+class ValidationStatus(Enum):
+    """验证状态"""
+    NOT_VALIDATED = "not_validated"
+    VALIDATED = "validated"
+    VALIDATED_OOS = "validated_oos"
+    FAILED = "failed"
+    EXPIRED = "expired"
+
+
 class FactorSource(Enum):
     """因子来源"""
     SELF_DEVELOPED = "自研"
@@ -55,11 +64,24 @@ class FactorQualityMetrics:
     nan_ratio: float = 0.0
     coverage: float = 0.0
     
-    def to_dict(self) -> Dict[str, float]:
+    ic_t: float = 0.0
+    win_rate: float = 0.0
+    annual_spread: float = 0.0
+    annual_spread_net: float = 0.0
+    turnover: float = 0.0
+    min_quantile_return: float = 0.0
+    max_quantile_return: float = 0.0
+    quantile_spread: float = 0.0
+    
+    backtest_score: int = 0
+    backtest_rating: str = ""
+    score_details: List[str] = field(default_factory=list)
+    
+    def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
     
     @classmethod
-    def from_dict(cls, data: Dict[str, float]) -> "FactorQualityMetrics":
+    def from_dict(cls, data: Dict[str, Any]) -> "FactorQualityMetrics":
         return cls(**{k: v for k, v in data.items() if hasattr(cls, k)})
 
 
@@ -72,11 +94,25 @@ class BacktestResult:
     win_rate: float = 0.0
     ic: float = 0.0
     
-    def to_dict(self) -> Dict[str, float]:
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    stock_pool: str = "全市场"
+    n_stocks: int = 0
+    n_groups: int = 5
+    holding_period: int = 5
+    market_type: str = "all_market"
+    enable_oos: bool = False
+    train_ratio: float = 0.7
+    transaction_costs: bool = True
+    credibility_score: float = 0.0
+    oos_valid: bool = False
+    backtest_version: str = "v2.0"
+    
+    def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
     
     @classmethod
-    def from_dict(cls, data: Dict[str, float]) -> "BacktestResult":
+    def from_dict(cls, data: Dict[str, Any]) -> "BacktestResult":
         return cls(**{k: v for k, v in data.items() if hasattr(cls, k)})
 
 
@@ -92,14 +128,22 @@ class FactorMetadata:
     sub_category: FactorSubCategory
     direction: FactorDirection = FactorDirection.POSITIVE
     status: FactorStatus = FactorStatus.ACTIVE
+    validation_status: ValidationStatus = ValidationStatus.NOT_VALIDATED
     created_at: str = field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d"))
     updated_at: str = field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d"))
+    validated_at: Optional[str] = None
     quality_metrics: Optional[FactorQualityMetrics] = None
     backtest_results: Dict[str, BacktestResult] = field(default_factory=dict)
     score: float = 0.0
     rank: int = 0
     tags: List[str] = field(default_factory=list)
     parameters: Dict[str, Any] = field(default_factory=dict)
+    credibility_score: float = 0.0
+    oos_valid: bool = False
+    calc_window: int = 0
+    data_processing: str = ""
+    default_params: str = ""
+    update_schedule: str = "下一交易日早晨9:00前更新"
     
     def to_dict(self) -> Dict[str, Any]:
         result = {
@@ -114,14 +158,22 @@ class FactorMetadata:
             },
             "direction": self.direction.value,
             "status": self.status.value,
+            "validation_status": self.validation_status.value,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
+            "validated_at": self.validated_at,
             "quality_metrics": self.quality_metrics.to_dict() if self.quality_metrics else None,
             "backtest_results": {k: v.to_dict() for k, v in self.backtest_results.items()},
             "score": self.score,
             "rank": self.rank,
             "tags": self.tags,
-            "parameters": self.parameters
+            "parameters": self.parameters,
+            "credibility_score": self.credibility_score,
+            "oos_valid": self.oos_valid,
+            "calc_window": self.calc_window,
+            "data_processing": self.data_processing,
+            "default_params": self.default_params,
+            "update_schedule": self.update_schedule
         }
         return result
     
@@ -142,6 +194,12 @@ class FactorMetadata:
                 status = s
                 break
         
+        validation_status = ValidationStatus.NOT_VALIDATED
+        for vs in ValidationStatus:
+            if vs.value == data.get("validation_status", "not_validated"):
+                validation_status = vs
+                break
+        
         quality_metrics = None
         if data.get("quality_metrics"):
             quality_metrics = FactorQualityMetrics.from_dict(data["quality_metrics"])
@@ -160,14 +218,22 @@ class FactorMetadata:
             sub_category=sub_category or FactorSubCategory.TIME_SERIES_MOMENTUM,
             direction=direction,
             status=status,
+            validation_status=validation_status,
             created_at=data.get("created_at", datetime.now().strftime("%Y-%m-%d")),
             updated_at=data.get("updated_at", datetime.now().strftime("%Y-%m-%d")),
+            validated_at=data.get("validated_at"),
             quality_metrics=quality_metrics,
             backtest_results=backtest_results,
             score=data.get("score", 0.0),
             rank=data.get("rank", 0),
             tags=data.get("tags", []),
-            parameters=data.get("parameters", {})
+            parameters=data.get("parameters", {}),
+            credibility_score=data.get("credibility_score", 0.0),
+            oos_valid=data.get("oos_valid", False),
+            calc_window=data.get("calc_window", 0),
+            data_processing=data.get("data_processing", ""),
+            default_params=data.get("default_params", ""),
+            update_schedule=data.get("update_schedule", "下一交易日早晨9:00前更新")
         )
 
 
@@ -261,6 +327,10 @@ class FactorRegistry:
         """
         factor_id = self._generate_factor_id()
         
+        existing = self.get_by_name(name)
+        if existing:
+            return existing
+        
         factor = FactorMetadata(
             id=factor_id,
             name=name,
@@ -331,7 +401,59 @@ class FactorRegistry:
         factor_id: str, 
         metrics: FactorQualityMetrics
     ) -> Optional[FactorMetadata]:
-        """更新因子质量指标"""
+        """更新因子质量指标（带质量门槛验证）"""
+        from ..infrastructure.quality_gate import get_quality_gate, GateStage
+        from ..infrastructure.recovery_manager import get_recovery_manager, OperationType
+        
+        quality_gate = get_quality_gate()
+        recovery_manager = get_recovery_manager()
+        
+        factor = self.get(factor_id)
+        before_state = {
+            "status": factor.status.value if factor else "unknown",
+            "quality_metrics": factor.quality_metrics.to_dict() if factor and factor.quality_metrics else None
+        }
+        
+        validation_data = {
+            'ic_mean': metrics.ic_mean,
+            'ir': metrics.ir,
+            'win_rate': metrics.win_rate
+        }
+        
+        gate_result = quality_gate.validate(GateStage.FACTOR_REGISTRATION, validation_data)
+        
+        if not gate_result.passed:
+            error_messages = [r.message for r in gate_result.blocking_failures]
+            print(f"⚠️  因子 {factor_id} 质量验证失败:")
+            for msg in error_messages:
+                print(f"    {msg}")
+            
+            if factor:
+                factor.status = FactorStatus.INACTIVE
+                factor.updated_at = datetime.now().strftime("%Y-%m-%d")
+                self._save_registry()
+                print(f"    因子状态已设置为: INACTIVE")
+                print(f"    注意: 因子已入库但标记为INACTIVE，可在修复后重新激活")
+                
+                after_state = {
+                    "status": "inactive",
+                    "quality_metrics": metrics.to_dict()
+                }
+                
+                recovery_manager.record_operation(
+                    operation_type=OperationType.FACTOR_DEACTIVATE,
+                    description=f"因子 {factor_id} 因质量验证失败被停用",
+                    operator="quality_gate",
+                    before_state={factor_id: before_state},
+                    after_state={factor_id: after_state},
+                    related_ids=[factor_id],
+                    metadata={
+                        "validation_errors": error_messages,
+                        "ic_mean": metrics.ic_mean,
+                        "ir": metrics.ir
+                    }
+                )
+        
         return self.update(factor_id, quality_metrics=metrics)
     
     def update_backtest_result(
@@ -354,6 +476,49 @@ class FactorRegistry:
     def update_score(self, factor_id: str, score: float, rank: int = 0) -> Optional[FactorMetadata]:
         """更新因子评分和排名"""
         return self.update(factor_id, score=score, rank=rank)
+    
+    def update_validation_status(
+        self,
+        factor_id: str,
+        validation_status: ValidationStatus,
+        credibility_score: float = 0.0,
+        oos_valid: bool = False
+    ) -> Optional[FactorMetadata]:
+        """
+        更新因子验证状态
+        
+        Args:
+            factor_id: 因子ID
+            validation_status: 验证状态
+            credibility_score: 可信度评分
+            oos_valid: 样本外验证是否通过
+            
+        Returns:
+            Optional[FactorMetadata]: 更新后的因子元数据
+        """
+        factor = self._factors.get(factor_id)
+        if factor is None:
+            return None
+        
+        factor.validation_status = validation_status
+        factor.credibility_score = credibility_score
+        factor.oos_valid = oos_valid
+        factor.validated_at = datetime.now().strftime("%Y-%m-%d")
+        factor.updated_at = datetime.now().strftime("%Y-%m-%d")
+        self._save_registry()
+        
+        return factor
+    
+    def list_validated(self) -> List[FactorMetadata]:
+        """获取已验证通过的因子"""
+        return [
+            f for f in self._factors.values()
+            if f.validation_status in (ValidationStatus.VALIDATED, ValidationStatus.VALIDATED_OOS)
+        ]
+    
+    def list_by_validation_status(self, status: ValidationStatus) -> List[FactorMetadata]:
+        """按验证状态获取因子"""
+        return [f for f in self._factors.values() if f.validation_status == status]
     
     def delete(self, factor_id: str) -> bool:
         """

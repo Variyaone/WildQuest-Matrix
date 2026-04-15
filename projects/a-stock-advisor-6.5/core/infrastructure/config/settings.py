@@ -11,6 +11,32 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
 
+def _load_dotenv():
+    """加载.env文件到环境变量"""
+    env_paths = [
+        Path.cwd() / '.env',
+        Path(__file__).parent.parent.parent.parent / '.env',
+    ]
+    
+    for env_path in env_paths:
+        if env_path.exists():
+            with open(env_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith('#'):
+                        continue
+                    if '=' in line:
+                        key, value = line.split('=', 1)
+                        key = key.strip()
+                        value = value.strip().strip('"').strip("'")
+                        if key and key not in os.environ:
+                            os.environ[key] = value
+            break
+
+
+_load_dotenv()
+
+
 @dataclass
 class DataConfig:
     """数据配置"""

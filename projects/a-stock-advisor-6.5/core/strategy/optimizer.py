@@ -2,6 +2,7 @@
 策略优化器模块
 
 自动优化策略参数，支持网格搜索、贝叶斯优化、遗传算法。
+支持并行优化以加速大规模参数搜索。
 """
 
 from typing import Dict, List, Optional, Any, Tuple, Union
@@ -10,6 +11,8 @@ from datetime import datetime
 from enum import Enum
 import itertools
 import random
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+import multiprocessing
 
 import pandas as pd
 import numpy as np
@@ -17,11 +20,11 @@ import numpy as np
 from .registry import (
     StrategyMetadata, 
     StrategyPerformance,
-    SignalConfig,
     RiskParams,
     RebalanceFrequency,
     get_strategy_registry
 )
+from .factor_combiner import FactorCombinationConfig
 from .backtester import StrategyBacktester, BacktestResult, get_strategy_backtester
 from ..infrastructure.exceptions import StrategyException
 
@@ -173,9 +176,10 @@ class GeneticOptimizer:
 class StrategyOptimizer:
     """策略优化器"""
     
-    def __init__(self):
+    def __init__(self, max_workers: Optional[int] = None):
         self._registry = get_strategy_registry()
         self._backtester = get_strategy_backtester()
+        self._max_workers = max_workers or max(1, multiprocessing.cpu_count() - 1)
     
     def optimize(
         self,
@@ -185,9 +189,24 @@ class StrategyOptimizer:
         factor_data: Dict[str, pd.DataFrame],
         method: OptimizationMethod = OptimizationMethod.GRID_SEARCH,
         target: OptimizationTarget = OptimizationTarget.SHARPE_RATIO,
-        n_iterations: int = 100
+        n_iterations: int = 100,
+        parallel: bool = False
     ) -> OptimizationResult:
-        """优化策略参数"""
+        """优化策略参数
+        
+        Args:
+            strategy: 策略ID或元数据
+            param_ranges: 参数范围列表
+            price_data: 价格数据
+            factor_data: 因子数据
+            method: 优化方法
+            target: 优化目标
+            n_iterations: 迭代次数
+            parallel: 是否并行执行
+            
+        Returns:
+            OptimizationResult: 优化结果
+        """
         if isinstance(strategy, str):
             strategy_meta = self._registry.get(strategy)
             if strategy_meta is None:
@@ -203,6 +222,11 @@ class StrategyOptimizer:
         
         try:
             if method == OptimizationMethod.RANDOM_SEARCH:
+                if parallel:
+                    return self._random_search_parallel(
+                        strategy_meta, param_ranges, price_data,
+                        factor_data, target, n_iterations
+                    )
                 return self._random_search(
                     strategy_meta, param_ranges, price_data,
                     factor_data, target, n_iterations
@@ -213,6 +237,11 @@ class StrategyOptimizer:
                     factor_data, target, n_iterations
                 )
             else:
+                if parallel:
+                    return self._grid_search_parallel(
+                        strategy_meta, param_ranges, price_data,
+                        factor_data, target
+                    )
                 return self._grid_search(
                     strategy_meta, param_ranges, price_data,
                     factor_data, target
@@ -416,6 +445,128 @@ class StrategyOptimizer:
             iterations=optimizer.n_generations * optimizer.population_size
         )
     
+    def _grid_search_parallel(
+        self,
+        strategy: StrategyMetadata,
+        param_ranges: List[ParameterRange],
+        price_data: pd.DataFrame,
+        factor_data: Dict[str, pd.DataFrame],
+        target: OptimizationTarget
+    ) -> OptimizationResult:
+        """并行网格搜索"""
+        optimizer = GridSearchOptimizer(param_ranges)
+        combinations = optimizer.generate_combinations()
+        
+        all_results = []
+        
+        def evaluate_params(params: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+            try:
+                modified_strategy = self._apply_params(strategy, params)
+                result = self._backtester.backtest(
+                    modified_strategy,
+                    price_data.copy(),
+                    {k: v.copy() for k, v in factor_data.items()}
+                )
+                if result.success:
+                    score = self._get_target_score(result, target)
+                    return {
+                        "params": params,
+                        "score": score,
+                        "performance": result.performance.to_dict() if result.performance else {}
+                    }
+            except Exception:
+                pass
+            return None
+        
+        with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
+            futures = {executor.submit(evaluate_params, params): params for params in combinations}
+            
+            for future in as_completed(futures):
+                result = future.result()
+                if result:
+                    all_results.append(result)
+        
+        if not all_results:
+            return OptimizationResult(
+                success=False,
+                strategy_id=strategy.id,
+                best_params={},
+                best_score=0,
+                error_message="所有参数组合回测失败"
+            )
+        
+        best_result = max(all_results, key=lambda x: x['score'])
+        
+        return OptimizationResult(
+            success=True,
+            strategy_id=strategy.id,
+            best_params=best_result['params'],
+            best_score=best_result['score'],
+            all_results=all_results,
+            iterations=len(combinations)
+        )
+    
+    def _random_search_parallel(
+        self,
+        strategy: StrategyMetadata,
+        param_ranges: List[ParameterRange],
+        price_data: pd.DataFrame,
+        factor_data: Dict[str, pd.DataFrame],
+        target: OptimizationTarget,
+        n_iterations: int
+    ) -> OptimizationResult:
+        """并行随机搜索"""
+        optimizer = RandomSearchOptimizer(param_ranges, n_iterations)
+        
+        all_params = [optimizer.generate_random_params() for _ in range(n_iterations)]
+        all_results = []
+        
+        def evaluate_params(params: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+            try:
+                modified_strategy = self._apply_params(strategy, params)
+                result = self._backtester.backtest(
+                    modified_strategy,
+                    price_data.copy(),
+                    {k: v.copy() for k, v in factor_data.items()}
+                )
+                if result.success:
+                    score = self._get_target_score(result, target)
+                    return {
+                        "params": params,
+                        "score": score
+                    }
+            except Exception:
+                pass
+            return None
+        
+        with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
+            futures = {executor.submit(evaluate_params, params): params for params in all_params}
+            
+            for future in as_completed(futures):
+                result = future.result()
+                if result:
+                    all_results.append(result)
+        
+        if not all_results:
+            return OptimizationResult(
+                success=False,
+                strategy_id=strategy.id,
+                best_params={},
+                best_score=0,
+                error_message="所有随机搜索回测失败"
+            )
+        
+        best_result = max(all_results, key=lambda x: x['score'])
+        
+        return OptimizationResult(
+            success=True,
+            strategy_id=strategy.id,
+            best_params=best_result['params'],
+            best_score=best_result['score'],
+            all_results=all_results,
+            iterations=n_iterations
+        )
+    
     def _apply_params(
         self,
         strategy: StrategyMetadata,
@@ -427,10 +578,10 @@ class StrategyOptimizer:
             name=strategy.name,
             description=strategy.description,
             strategy_type=strategy.strategy_type,
-            signals=SignalConfig(
-                signal_ids=strategy.signals.signal_ids.copy(),
-                weights=strategy.signals.weights.copy(),
-                combination_method=strategy.signals.combination_method
+            factor_config=FactorCombinationConfig(
+                factor_ids=strategy.factor_config.factor_ids.copy(),
+                weights=strategy.factor_config.weights.copy(),
+                combination_method=strategy.factor_config.combination_method
             ),
             rebalance_freq=strategy.rebalance_freq,
             max_positions=strategy.max_positions,
