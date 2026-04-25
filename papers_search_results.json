@@ -1,0 +1,611 @@
+[
+  {
+    "title": "Portfolio Optimization-Based Stock Prediction Using Long-Short Term Memory Network in Quantitative Trading",
+    "authors": [
+      "Van-Dai Ta",
+      "Chuan-Ming Liu",
+      "Direselign Addis Tadesse"
+    ],
+    "abstract": "In quantitative trading, stock prediction plays an important role in developing an effective trading strategy to achieve a substantial return. Prediction outcomes also are the prerequisites for active portfolio construction and optimization. However, the stock prediction is a challenging task because of the diversified factors involved such as uncertainty and instability. Most of the previous research focuses on analyzing financial historical data based on statistical techniques, which is known as a type of time series analysis with limited achievements. Recently, deep learning techniques, specifically recurrent neural network (RNN), has been designed to work with sequence prediction. In this paper, a long short-term memory (LSTM) network, which is a special kind of RNN, is proposed to predict stock movement based on historical data. In order to construct an efficient portfolio, multiple portfolio optimization techniques, including equal-weighted modeling (EQ), simulation modeling Monte Carlo simulation (MCS), and optimization modeling mean variant optimization (MVO), are used to improve the portfolio performance. The results showed that our proposed LSTM prediction model works efficiently by obtaining high accuracy from stock prediction. The constructed portfolios based on the LSTM prediction model outperformed other constructed portfolios-based prediction models such as linear regression and support vector machine. In addition, optimization techniques showed a significant improvement in the return and Sharpe ratio of the constructed portfolios. Furthermore, our constructed portfolios beat the benchmark Standard and Poor 500 (S&P 500) index in both active returns and Sharpe ratios.",
+    "url": "https://www.semanticscholar.org/paper/28df565fbd69ff39bbb65499d87cfb5e70337a0e",
+    "pdf_url": "https://www.mdpi.com/2076-3417/10/2/437/pdf?version=1578652472",
+    "published_date": "2020-01-07",
+    "categories": [],
+    "citation_count": 176,
+    "relevance_score": 1.0,
+    "doi": null
+  },
+  {
+    "title": "Deep-learning-based stock market prediction incorporating ESG sentiment and technical indicators",
+    "authors": [
+      "Haein Lee",
+      "Jang Hyun Kim",
+      "Hae Sun Jung"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W4396642289",
+    "pdf_url": "https://www.nature.com/articles/s41598-024-61106-2.pdf",
+    "published_date": "2024-05-04",
+    "categories": [
+      "Index (typography)",
+      "Computer science",
+      "Sustainability",
+      "Stock market",
+      "Metric (unit)"
+    ],
+    "citation_count": 52,
+    "relevance_score": 0.95,
+    "doi": null
+  },
+  {
+    "title": "Factor Investing Strategy Investigation and Optimization for Chinese Stock Market with Backtesting and Implementation",
+    "authors": [
+      "Xiangru Cui",
+      "Qizhen Tang",
+      "Yiyun Yang"
+    ],
+    "abstract": "Quantitative investment has a 50-year-history in the world and a much shorter history in China, which is about 10 years. In 1991, the securities market was established in China. Compared with traditional investment strategy, which is based on investors’ active decisions, quantitative investment is passive. It evaluates the performances of stocks by mathematical and statistical factors, which can be divided into the profit factor, the fiscal factor, the market factor, valuation and scale factor and growth factor. Single-factor and are two analysis methods. Multi-factor selection strategy uses investment models involving multiple factors and gives a comprehensive and fair measurement to the stocks. But it’s very difficult to decide which factors to be included and whether the prediction is accurate. The research involved three typical factors: emotional factor, TTM EPS_ ttm and TTM operating: _ revenue_ per_ share_ ttm. The first one has been performing well in recent two years. The second one performed badly before and well recently. The third one performed poor",
+    "url": "https://www.semanticscholar.org/paper/4d5b5d9bd88c1152082cf8664d17ea80e636211a",
+    "pdf_url": "https://doi.org/10.2991/assehr.k.211209.190",
+    "published_date": null,
+    "categories": [],
+    "citation_count": 1,
+    "relevance_score": 0.9299999999999999,
+    "doi": null
+  },
+  {
+    "title": "Prediction and Portfolio Optimization in Quantitative Trading Using Machine Learning Techniques",
+    "authors": [
+      "G. Patil"
+    ],
+    "abstract": "Abstract: Quantitative trading is an automated procedure in which trading techniques and judgments are performed using mathematical models. Quantitative trading involves a vast spectrum of computational methods, such as statistics, physics, or machine learning to diagnose, forecast, and benefit big data in finance for acquisition. This work analyses the body components of a quantitative trading technique. Machine learning presents many consequential benefits over conventional algorithmic trading. Machine learning executes numerous trading techniques consistently and acclimates to real-time demands. To illustrate how machine learning techniques can meet quantitative trading, linear regression and asset vector regression pinnacles are utilized to predict stock tendency. In accumulation, numerous optimization strategies are used to optimize the recovery and manage hazards in trading. One typical attribute of both forecast measures is they virtually executed short-term predictions with high precision and repayment. However, in the short-term forecast, the linear regression instance outmatches corresponded to the support vector regression model. Predictability is extensively enhanced by adding specialized needles to the dataset, preferably by accommodating cost and importance. Despite the gap between prediction modelling and authentic trading, the suggested trading technique accomplished a higher retrieval than the S&P 500 ETF-SPY.",
+    "url": "https://www.semanticscholar.org/paper/3e159028af57273db4079990f37c2c4af00b765d",
+    "pdf_url": "https://doi.org/10.22214/ijraset.2023.53921",
+    "published_date": "2023-06-30",
+    "categories": [],
+    "citation_count": 0,
+    "relevance_score": 0.8300000000000001,
+    "doi": null
+  },
+  {
+    "title": "Skewness Dispersion and Stock Market Returns",
+    "authors": [
+      "Mykola Babiak",
+      "Jozef Barunik",
+      "Josef Kurka"
+    ],
+    "abstract": "Cross-sectional dispersion in firm-level realized skewness is significantly and negatively related to future stock market returns. The predictive power of skewness dispersion is robust to in-sample and out-of-sample estimation and is incremental over a broad set of existing predictors, with only a few alternatives retaining independent explanatory ability. Skewness dispersion also delivers substantial economic gains in portfolio allocation. Its forecasting power is concentrated in months with monetary policy announcements, reflecting an information-based mechanism. The empirical evidence suggests that skewness dispersion captures the gradual incorporation of macro news into prices, which is driven by variation in aggregate risk and valuation adjustments.",
+    "url": "http://arxiv.org/abs/2604.07870v1",
+    "pdf_url": "https://arxiv.org/pdf/2604.07870v1",
+    "published_date": "2026-04-09",
+    "categories": [
+      "q-fin.GN"
+    ],
+    "citation_count": null,
+    "relevance_score": 0.69,
+    "doi": null
+  },
+  {
+    "title": "Predicting Stock Market Trends Using Machine Learning and Deep Learning Algorithms Via Continuous and Binary Data; a Comparative Analysis",
+    "authors": [
+      "Mojtaba Nabipour",
+      "Pooyan Nayyeri",
+      "Hamed Jabani",
+      "S. Shahab",
+      "Amir Mosavi"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W3048630347",
+    "pdf_url": "https://ieeexplore.ieee.org/ielx7/6287639/8948470/09165760.pdf",
+    "published_date": "2020-01-01",
+    "categories": [
+      "Artificial intelligence",
+      "Machine learning",
+      "Computer science",
+      "AdaBoost",
+      "Decision tree"
+    ],
+    "citation_count": 440,
+    "relevance_score": 0.6499999999999999,
+    "doi": null
+  },
+  {
+    "title": "Fusion in stock market prediction: A decade survey on the necessity, recent developments, and potential future directions",
+    "authors": [
+      "Ankit Thakkar",
+      "Kinjal Chaudhari"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W3080733778",
+    "pdf_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/7448965",
+    "published_date": "2020-08-26",
+    "categories": [
+      "Stock market",
+      "Computer science",
+      "Stock market prediction",
+      "Portfolio",
+      "Stock market index"
+    ],
+    "citation_count": 210,
+    "relevance_score": 0.6499999999999999,
+    "doi": null
+  },
+  {
+    "title": "Stock Price Prediction Using LSTM on Indian Share Market",
+    "authors": [
+      "Achyut Ghosh",
+      "Soumik Bose",
+      "Giridhar Maji",
+      "Narayan C. Debnath",
+      "Soumya Sen"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W2995154733",
+    "pdf_url": "https://easychair.org/publications/open/LKgn",
+    "published_date": "2019-09-27",
+    "categories": [
+      "Stock market",
+      "Computer science",
+      "Irrational number",
+      "Stock market prediction",
+      "Stock (firearms)"
+    ],
+    "citation_count": 139,
+    "relevance_score": 0.6499999999999999,
+    "doi": null
+  },
+  {
+    "title": "Which Artificial Intelligence Algorithm Better Predicts the Chinese Stock Market?",
+    "authors": [
+      "Lin Chen",
+      "Zhilin Qiao",
+      "Minggang Wang",
+      "Chao Wang",
+      "Ruijin Du",
+      "H. Eugene Stanley"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W2883692332",
+    "pdf_url": "https://doi.org/10.1109/access.2018.2859809",
+    "published_date": "2018-01-01",
+    "categories": [
+      "Artificial intelligence",
+      "Computer science",
+      "Autoencoder",
+      "Artificial neural network",
+      "Machine learning"
+    ],
+    "citation_count": 122,
+    "relevance_score": 0.6499999999999999,
+    "doi": null
+  },
+  {
+    "title": "Predicting Stock Market Price Movement Using Sentiment Analysis: Evidence From Ghana",
+    "authors": [
+      "Isaac Kofi Nti",
+      "Adebayo Felix Adekoya",
+      "Benjamin Asubam Weyori"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W3043654723",
+    "pdf_url": "https://doi.org/10.2478/acss-2020-0004",
+    "published_date": "2020-05-01",
+    "categories": [
+      "Predictability",
+      "Social media",
+      "Stock (firearms)",
+      "Stock market",
+      "Profitability index"
+    ],
+    "citation_count": 74,
+    "relevance_score": 0.6499999999999999,
+    "doi": null
+  },
+  {
+    "title": "Illiquidity and stock returns: cross-section and time-series effects",
+    "authors": [
+      "Yakov Amihud"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W3121401171",
+    "pdf_url": "http://archive.nyu.edu/bitstream/2451/26706/2/FIN-00-041.pdf",
+    "published_date": "2002-01-01",
+    "categories": [
+      "Stock (firearms)",
+      "Economics",
+      "Financial economics",
+      "Stock market",
+      "Liberian dollar"
+    ],
+    "citation_count": 10198,
+    "relevance_score": 0.6499999999999999,
+    "doi": null
+  },
+  {
+    "title": "Predictability of machine learning techniques to forecast the trends of market index prices: Hypothesis testing for the Korean stock markets",
+    "authors": [
+      "Sujin Pyo",
+      "Jaewook Lee",
+      "Mincheol Cha",
+      "Huisu Jang"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W2769487452",
+    "pdf_url": "https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0188107&type=printable",
+    "published_date": "2017-11-14",
+    "categories": [
+      "Predictability",
+      "Econometrics",
+      "Index (typography)",
+      "Stock market index",
+      "Support vector machine"
+    ],
+    "citation_count": 80,
+    "relevance_score": 0.6499999999999999,
+    "doi": null
+  },
+  {
+    "title": "Use GBDT to Predict the Stock Market",
+    "authors": [
+      "JinShan Yang",
+      "ChenYue Zhao",
+      "HaoTong Yu",
+      "HeYang Chen"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W3045725258",
+    "pdf_url": "https://doi.org/10.1016/j.procs.2020.06.071",
+    "published_date": "2020-01-01",
+    "categories": [
+      "Computer science",
+      "Stock market",
+      "Word2vec",
+      "Profit (economics)",
+      "Voting"
+    ],
+    "citation_count": 62,
+    "relevance_score": 0.6499999999999999,
+    "doi": null
+  },
+  {
+    "title": "Stock Market Prediction Using Machine Learning",
+    "authors": [
+      "Yogita Deshmukh",
+      "Deepmala Saratkar",
+      "Yash Tiwari"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W2915473933",
+    "pdf_url": "https://doi.org/10.17148/ijarcce.2019.8107",
+    "published_date": "2019-01-30",
+    "categories": [
+      "Stock market",
+      "Artificial intelligence",
+      "Machine learning",
+      "Stock market prediction",
+      "Computer science"
+    ],
+    "citation_count": 44,
+    "relevance_score": 0.6499999999999999,
+    "doi": null
+  },
+  {
+    "title": "Exploring Graph Neural Networks for Stock Market Predictions with\\n Rolling Window Analysis",
+    "authors": [
+      "Daiki Matsunaga",
+      "Toyotaro Suzumura",
+      "Toshihiro Takahashi"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W3124713481",
+    "pdf_url": "https://arxiv.org/pdf/1909.10660",
+    "published_date": "2019-09-23",
+    "categories": [
+      "Stock (firearms)",
+      "Stock market",
+      "Artificial neural network",
+      "Computer science",
+      "Financial market"
+    ],
+    "citation_count": 57,
+    "relevance_score": 0.6499999999999999,
+    "doi": null
+  },
+  {
+    "title": "A Black Swan event-based hybrid model for Indian stock markets’ trends prediction",
+    "authors": [
+      "Samit Bhanja",
+      "Abhishek Das"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W4206455715",
+    "pdf_url": "https://link.springer.com/content/pdf/10.1007/s11334-021-00428-0.pdf",
+    "published_date": "2022-01-07",
+    "categories": [
+      "Black swan theory",
+      "Stock (firearms)",
+      "Stock market",
+      "Computer science",
+      "Stock market prediction"
+    ],
+    "citation_count": 38,
+    "relevance_score": 0.6499999999999999,
+    "doi": null
+  },
+  {
+    "title": "Machine learning in the Chinese stock market",
+    "authors": [
+      "Markus Leippold",
+      "Qian Wang",
+      "Wenyu Zhou"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W3196503391",
+    "pdf_url": "https://doi.org/10.1016/j.jfineco.2021.08.017",
+    "published_date": "2021-08-27",
+    "categories": [
+      "Predictability",
+      "Market liquidity",
+      "Transaction cost",
+      "Stock market",
+      "Business"
+    ],
+    "citation_count": 520,
+    "relevance_score": 0.5,
+    "doi": null
+  },
+  {
+    "title": "Stock Prediction Based on Optimized LSTM and GRU Models",
+    "authors": [
+      "Ya Gao",
+      "Rong Wang",
+      "Enmin Zhou"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W3202315245",
+    "pdf_url": "https://downloads.hindawi.com/journals/sp/2021/4055281.pdf",
+    "published_date": "2021-09-29",
+    "categories": [
+      "Stock (firearms)",
+      "Stock market",
+      "Econometrics",
+      "Computer science",
+      "Stock price"
+    ],
+    "citation_count": 151,
+    "relevance_score": 0.5,
+    "doi": null
+  },
+  {
+    "title": "A Survey on Machine Learning for Stock Price Prediction: Algorithms and Techniques",
+    "authors": [
+      "Mehtabhorn Obthong",
+      "Nongnuch Tantisantiwong",
+      "Watthanasak Jeamwatthanachai",
+      "Gary Wills"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W3015726753",
+    "pdf_url": "https://doi.org/10.5220/0009340700630071",
+    "published_date": "2020-01-01",
+    "categories": [
+      "Computer science",
+      "Machine learning",
+      "Stock (firearms)",
+      "Stock price",
+      "Artificial intelligence"
+    ],
+    "citation_count": 133,
+    "relevance_score": 0.5,
+    "doi": null
+  },
+  {
+    "title": "The Cross‐Section of Expected Stock Returns",
+    "authors": [
+      "Eugene F. Fama",
+      "Kenneth R. French"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W2166215547",
+    "pdf_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/j.1540-6261.1992.tb04398.x",
+    "published_date": "1992-06-01",
+    "categories": [
+      "Equity (law)",
+      "Econometrics",
+      "Economics",
+      "Financial economics",
+      "Earnings"
+    ],
+    "citation_count": 15068,
+    "relevance_score": 0.5,
+    "doi": null
+  },
+  {
+    "title": "Stock return ignorance",
+    "authors": [
+      "Yulia V. Veld‐Merkoulova",
+      "Chris Veld"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W3176851587",
+    "pdf_url": "https://doi.org/10.1016/j.jfineco.2021.06.016",
+    "published_date": "2021-06-19",
+    "categories": [
+      "Stock (firearms)",
+      "Stock market",
+      "Economics",
+      "Financial literacy",
+      "Financial economics"
+    ],
+    "citation_count": 65,
+    "relevance_score": 0.5,
+    "doi": null
+  },
+  {
+    "title": "A Hybrid Stock Price Prediction Model Based on PRE and Deep Neural Network",
+    "authors": [
+      "Srivinay Srivinay",
+      "B. C. Manujakshi",
+      "Mohan Kabadi",
+      "Nagaraj Naik"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W4224233911",
+    "pdf_url": "https://www.mdpi.com/2306-5729/7/5/51/pdf?version=1650436624",
+    "published_date": "2022-04-20",
+    "categories": [
+      "Stock (firearms)",
+      "Mean squared error",
+      "Econometrics",
+      "Artificial neural network",
+      "Stock market"
+    ],
+    "citation_count": 53,
+    "relevance_score": 0.5,
+    "doi": null
+  },
+  {
+    "title": "Multifactor Explanations of Asset Pricing Anomalies",
+    "authors": [
+      "Eugene F. Fama",
+      "Kenneth R. French"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W2113305199",
+    "pdf_url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/j.1540-6261.1996.tb05202.x",
+    "published_date": "1996-03-01",
+    "categories": [
+      "Capital asset pricing model",
+      "Economics",
+      "Financial economics",
+      "Earnings growth",
+      "Equity (law)"
+    ],
+    "citation_count": 6475,
+    "relevance_score": 0.5,
+    "doi": null
+  },
+  {
+    "title": "Corporate Real Estate Holdings and the Cross Section of Stock Returns",
+    "authors": [
+      "Şelale Tüzel"
+    ],
+    "abstract": "",
+    "url": "https://openalex.org/W2032196656",
+    "pdf_url": "https://doi.org/10.2139/ssrn.685642",
+    "published_date": "2009-01-01",
+    "categories": [
+      "Business",
+      "Stock (firearms)",
+      "Real estate",
+      "Section (typography)",
+      "Financial economics"
+    ],
+    "citation_count": 64,
+    "relevance_score": 0.5,
+    "doi": null
+  },
+  {
+    "title": "Design and Empirical Study of a Large Language Model-Based Multi-Agent Investment System for Chinese Public REITs",
+    "authors": [
+      "Zheng Li"
+    ],
+    "abstract": "This study addresses the low-volatility Chinese Public Real Estate Investment Trusts (REITs) market, proposing a large language model (LLM)-driven trading framework based on multi-agent collaboration. The system constructs four types of analytical agents-announcement, event, price momentum, and market-each conducting analysis from different dimensions; then the prediction agent integrates these multi-source signals to output directional probability distributions across multiple time horizons, then the decision agent generates discrete position adjustment signals based on the prediction results and risk control constraints, thereby forming a closed loop of analysis-prediction-decision-execution. This study further compares two prediction model pathways: for the prediction agent, directly calling the general-purpose large model DeepSeek-R1 versus using a specialized small model Qwen3-8B fine-tuned via supervised fine-tuning and reinforcement learning alignment. In the backtest from October 2024 to October 2025, both agent-based strategies significantly outperformed the buy-and-hold benchmark in terms of cumulative return, Sharpe ratio, and maximum drawdown. The results indicate that the multi-agent framework can effectively enhance the risk-adjusted return of REITs trading, and the fine-tuned small model performs close to or even better than the general-purpose large model in some scenarios.",
+    "url": "http://arxiv.org/abs/2602.00082v1",
+    "pdf_url": "https://arxiv.org/pdf/2602.00082v1",
+    "published_date": "2026-01-22",
+    "categories": [
+      "q-fin.ST",
+      "cs.AI",
+      "q-fin.TR"
+    ],
+    "citation_count": null,
+    "relevance_score": 0.48000000000000004,
+    "doi": null
+  },
+  {
+    "title": "Crypto Pricing with Hidden Factors",
+    "authors": [
+      "Matthew Brigida"
+    ],
+    "abstract": "We estimate risk premia in the cross-section of cryptocurrency returns using the Giglio-Xiu (2021) three-pass approach, allowing for omitted latent factors alongside observed stock-market and crypto-market factors. Using weekly data on a broad universe of large cryptocurrencies, we find that crypto expected returns load on both crypto-specific factors and selected equity-industry factors associated with technology and profitability, consistent with increased integration between crypto and traditional markets. In addition, we study non-tradable state variables capturing investor sentiment (Fear and Greed), speculative rotation (Altcoin Season Index), and security shocks (hacked value scaled by market capitalization), which are new to the literature. Relative to conventional Fama-MacBeth estimates, the latent-factor approach yields materially different premia for key factors, highlighting the importance of controlling for unobserved risks in crypto asset pricing.",
+    "url": "http://arxiv.org/abs/2601.07664v1",
+    "pdf_url": "https://arxiv.org/pdf/2601.07664v1",
+    "published_date": "2026-01-12",
+    "categories": [
+      "q-fin.PR",
+      "econ.EM",
+      "q-fin.GN"
+    ],
+    "citation_count": null,
+    "relevance_score": 0.41,
+    "doi": null
+  },
+  {
+    "title": "Private Credit Markets Theory, Evidence, and Emerging Frontiers",
+    "authors": [
+      "Jiacheng Zou"
+    ],
+    "abstract": "Private credit assets under management grew from \\$158 billion in 2010 to nearly \\$2 trillion globally by mid-2024, fundamentally reshaping corporate credit markets. This paper provides a systematic survey of the academic literature on private credit, organizing theory and evidence around four questions: why the market has grown so rapidly, how direct lender technology differs from bank lending, what risk-adjusted returns investors earn, and whether the sector poses systemic risks. We develop an integrated theoretical framework linking delegated monitoring, soft-information processing, and incomplete contracting to the institutional specifics of modern direct lending. The empirical evidence documents a distinctive lending technology serving opaque, private-equity-sponsored borrowers at a meaningful and persistent spread premium over the broadly syndicated loan market, while performance evidence suggests that risk-adjusted returns for the average fund are largely consumed by fees.",
+    "url": "http://arxiv.org/abs/2603.14491v1",
+    "pdf_url": "https://arxiv.org/pdf/2603.14491v1",
+    "published_date": "2026-03-15",
+    "categories": [
+      "q-fin.GN"
+    ],
+    "citation_count": null,
+    "relevance_score": 0.39,
+    "doi": null
+  },
+  {
+    "title": "AI Agents in Financial Markets: Architecture, Applications, and Systemic Implications",
+    "authors": [
+      "Hui Gong"
+    ],
+    "abstract": "Recent advances in large language models, tool-using agents, and financial machine learning are shifting financial automation from isolated prediction tasks to integrated decision systems that can perceive information, reason over objectives, and generate or execute actions. This paper develops an integrative framework for analysing agentic finance: financial market environments in which autonomous or semi-autonomous AI systems participate in information processing, decision support, monitoring, and execution workflows. The analysis proceeds in three steps. First, the paper proposes a four-layer architecture of financial AI agents covering data perception, reasoning engines, strategy generation, and execution with control. Second, it introduces the Agentic Financial Market Model (AFMM), a stylised agent-based representation linking agent design parameters such as autonomy depth, heterogeneity, execution coupling, infrastructure concentration, and supervisory observability to market-level outcomes including efficiency, liquidity resilience, volatility, and systemic risk. Third, it presents an illustrative empirical application based on event studies of AI-agent capability disclosures and heterogeneous market repricing. The paper argues that the systemic implications of AI in finance depend less on model intelligence alone than on how agent architectures are distributed, coupled, and governed across institutions. The empirical application is intentionally exploratory: it does not validate the full AFMM, but shows how one observable expectations channel can be studied using public data. In the near term, the most plausible equilibrium is bounded autonomy, in which AI agents operate as supervised co-pilots, monitoring systems, and constrained execution modules embedded within human decision processes.",
+    "url": "http://arxiv.org/abs/2603.13942v3",
+    "pdf_url": "https://arxiv.org/pdf/2603.13942v3",
+    "published_date": "2026-03-14",
+    "categories": [
+      "q-fin.GN"
+    ],
+    "citation_count": null,
+    "relevance_score": 0.39,
+    "doi": null
+  },
+  {
+    "title": "Systemic Risk and Default Cascades in Global Equity Markets: A Network and Tail-Risk Approach Based on the Gai Kapadia Framework",
+    "authors": [
+      "Ana Isabel Castillo Pereda"
+    ],
+    "abstract": "This study extends the Gai-Kapadia framework, originally developed for interbank contagion, to assess systemic risk and default cascades in global equity markets. We analyze a 30 asset network comprising Brazilian and developed market equities over the period 2015-2026, constructing exposure based financial networks from price co-movements. Threshold filtering (theta = 0.3 and theta = 0.5) is applied to isolate significant interconnections.\n  Cascade dynamics are analyzed through a combination of deterministic propagation and stochastic Monte Carlo simulations (n = 1000) under varying shock intensities. The results show that the system exhibits strong global resilience, with a negligible probability of large scale failure, while maintaining localized vulnerability within highly clustered subnetworks. In particular, shocks lead to an average of 1.0 failed asset for single shocks and 2.0 for simultaneous shocks, indicating limited propagation below a critical threshold.\n  Network analysis reveals a clear structural asymmetry: Brazilian assets display high clustering (Ci approx 0.8-1.0) and dense connectivity, which amplifies local shock propagation, whereas developed market assets exhibit lower connectivity (Ci approx 0.2-0.5), limiting systemic spread. Tail risk analysis, based on empirical CCDF and Hill estimators, confirms the presence of heavy tailed loss distributions, particularly in emerging markets, reinforcing their exposure to extreme events.\n  These findings demonstrate that systemic risk arises from the interaction between network topology and tail behavior, rather than from isolated asset characteristics. The proposed framework provides a scalable and empirically grounded approach for stress testing and systemic risk assessment, offering relevant insights for regulators and portfolio managers in increasingly interconnected financial markets.",
+    "url": "http://arxiv.org/abs/2604.19796v1",
+    "pdf_url": "https://arxiv.org/pdf/2604.19796v1",
+    "published_date": "2026-04-10",
+    "categories": [
+      "q-fin.ST",
+      "math.PR"
+    ],
+    "citation_count": null,
+    "relevance_score": 0.38,
+    "doi": null
+  },
+  {
+    "title": "Financial Anomaly Detection for the Canadian Market",
+    "authors": [
+      "Luigi Caputi",
+      "Nicholas Meadows"
+    ],
+    "abstract": "In this work we evaluate the performance of three classes of methods for detecting financial anomalies: topological data analysis (TDA), principal component analyis (PCA), and Neural Network-based approaches. We apply these methods to the TSX-60 data to identify major financial stress events in the Canadian stock market. We show how neural network-based methods (such as GlocalKD and One-Shot GIN(E)) and TDA methods achieve the strongest performance. The effectiveness of TDA in detecting financial anomalies suggests that global topological properties are meaningful in distinguishing financial stress events.",
+    "url": "http://arxiv.org/abs/2604.02549v1",
+    "pdf_url": "https://arxiv.org/pdf/2604.02549v1",
+    "published_date": "2026-04-02",
+    "categories": [
+      "q-fin.ST",
+      "cs.LG"
+    ],
+    "citation_count": null,
+    "relevance_score": 0.38,
+    "doi": null
+  }
+]

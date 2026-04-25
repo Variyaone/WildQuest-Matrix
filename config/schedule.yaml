@@ -1,0 +1,128 @@
+# A股量化系统v6.5 - 定时任务配置
+
+# 调度配置
+schedules:
+  # 每日推送（工作日16:00）
+  - name: daily-push
+    enabled: true
+    workflow: workflows/scheduled-push.lobster
+    cron: "0 16 * * 1-5"
+    timezone: "Asia/Shanghai"
+    description: "每日收盘后推送量化投资建议"
+
+  # 每周回测（周日22:00）
+  - name: weekly-backtest
+    enabled: false
+    workflow: workflows/backtest.lobster
+    cron: "0 22 * * 0"
+    timezone: "Asia/Shanghai"
+    description: "每周执行完整回测验证"
+
+  # 每日快速推送（工作日15:30）
+  - name: daily-fast-push
+    enabled: false
+    workflow: workflows/fast.lobster
+    cron: "30 15 * * 1-5"
+    timezone: "Asia/Shanghai"
+    description: "每日收盘前快速推送（简化流程）"
+
+  # 每月数据更新（每月1号02:00）
+  - name: monthly-data-update
+    enabled: false
+    workflow: workflows/data-update.lobster
+    cron: "0 2 1 * *"
+    timezone: "Asia/Shanghai"
+    description: "每月执行完整数据更新"
+
+# 通知配置
+notifications:
+  feishu:
+    enabled: true
+    user_id: "ou_xxx"  # 替换为实际用户ID
+    on_success: true
+    on_failure: true
+    on_approval_required: true
+    on_approval_rejected: true
+    on_risk_alert: true
+
+  email:
+    enabled: true
+    recipients:
+      - "user@example.com"  # 替换为实际邮箱
+    on_success: true
+    on_failure: true
+    on_approval_required: true
+    on_approval_rejected: true
+    on_risk_alert: true
+
+# 监控配置
+monitoring:
+  enabled: true
+  metrics:
+    - workflow_success_rate
+    - step_duration
+    - data_quality_score
+    - factor_count
+    - risk_alert_count
+    - approval_rate
+
+  alerts:
+    - name: workflow_failure
+      condition: "workflow_success_rate < 0.9"
+      severity: high
+      notification: feishu
+
+    - name: data_quality_low
+      condition: "data_quality_score < 80"
+      severity: medium
+      notification: feishu
+
+    - name: risk_alert
+      condition: "risk_alert_count > 0"
+      severity: urgent
+      notification: feishu
+
+# 重试配置
+retry:
+  max_retries: 2
+  backoff: exponential
+  initial_delay: 60
+  max_delay: 300
+
+# 超时配置
+timeout:
+  default: 300
+  data_update: 600
+  factor_calc: 900
+  approval: 3600
+  total: 7200
+
+# 质量标准
+quality_standards:
+  data_completeness: 99
+  data_freshness: 24
+  factor_ic: 0.02
+  factor_ir: 0.25
+  risk_compliance: true
+
+# 风险提示
+risk_warnings:
+  - "历史表现不代表未来"
+  - "市场环境变化可能影响策略效果"
+  - "数据延迟可能导致决策偏差"
+  - "投资有风险，建议仅供参考"
+  - "本推送仅供量化研究，不构成投资建议"
+
+# 归档配置
+archive:
+  enabled: true
+  destination: ./archive
+  retention_days: 90
+  format: json
+
+# 日志配置
+logging:
+  level: info
+  format: json
+  output: ./logs
+  retention_days: 30
