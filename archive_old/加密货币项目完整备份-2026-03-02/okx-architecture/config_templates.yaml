@@ -1,0 +1,530 @@
+# ============================================================
+# OKX自动交易系统 - 配置文件模板
+# ============================================================
+# 设计者: 架构师 🏗️
+# 日期: 2026-02-25
+# 版本: 1.0
+# ============================================================
+
+# ============================================================
+# 1. 系统基础配置
+# ============================================================
+system:
+  # 调试模式
+  debug: false
+
+  # 运行模式: simulation(模拟盘) | production(实盘)
+  # ⚠️ 实盘模式需要手动确认！
+  mode: simulation
+
+  # 日志级别: DEBUG | INFO | WARNING | ERROR
+  log_level: INFO
+
+  # 时区
+  timezone: Asia/Shanghai
+
+  # 数据目录
+  data_dir: ./data
+  log_dir: ./logs
+
+# ============================================================
+# 2. OKX API配置
+# ============================================================
+okx:
+  # API密钥
+  api_key: ${OKX_API_KEY}        # 从环境变量读取
+  secret_key: ${OKX_SECRET_KEY}  # 从环境变量读取
+  passphrase: ${OKX_PASSPHRASE}  # 从环境变量读取
+
+  # API环境: sandbox(测试) | production(生产)
+  # ⚠️ 生产环境会使用真实资金！
+  environment: sandbox
+
+  # Demo Trading(模拟交易)配置
+  demo_trading:
+    enabled: true  # 使用OKX Demo Trading
+
+  # WebSocket配置
+  websocket:
+    enabled: true
+    reconnect_interval: 5  # 断线重连间隔(秒)
+    max_retries: 10  # 最大重试次数
+
+# ============================================================
+# 3. 数据采集配置
+# ============================================================
+data_collector:
+  # 订阅的交易对
+  symbols:
+    - BTC/USDT
+    - ETH/USDT
+    # - SOL/USDT
+    # - ADA/USDT
+
+  # K线周期
+  timeframes:
+    - 1m   # 1分钟
+    - 5m   # 5分钟
+    - 15m  # 15分钟
+    - 1h   # 1小时
+    - 4h   # 4小时
+    - 1d   # 1天
+
+  # K线数据缓存大小
+  candle_cache_size: 1000  # 每个周期缓存条数
+
+  # 数据更新间隔(秒)
+  update_interval: 60
+
+  # 数据质量检查
+  quality_check:
+    enabled: true
+    check_missing_data: true
+    check_anomalous_values: true
+    price_deviation_threshold: 0.5  # 价格偏差阈值(%)
+
+# ============================================================
+# 4. 策略配置
+# ============================================================
+strategies:
+  # 策略1: 双均线策略 (推荐新手)
+  dual_ma:
+    enabled: true
+    name: "Dual Moving Average"
+
+    # 策略参数
+    parameters:
+      fast_ma: 5        # 快线周期
+      slow_ma: 20       # 慢线周期
+
+    # 使用的时间周期
+    timeframe: 1h
+
+    # 应用交易对
+    symbols:
+      - BTC/USDT
+      - ETH/USDT
+
+    # 风险参数 (策略特定)
+    risk:
+      stop_loss_pct: 0.03     # 3% 止损
+      take_profit_pct: 0.06   # 6% 止盈
+      min_profit_pct: 0.01    # 最小盈利1%才开仓
+
+    # 策略状态
+    state:
+      last_signal_time: null
+      open_positions: []
+
+  # 策略2: 布林带均值回归 (进阶)
+  bollinger_bands:
+    enabled: false  # 默认关闭
+
+    name: "Bollinger Bands Mean Reversion"
+
+    parameters:
+      period: 20          # 均线周期
+      std_dev: 2.0        # 标准差倍数
+      bb_upper: 2        # 上轨倍数
+      bb_lower: -2       # 下轨倍数
+
+    timeframe: 4h
+
+    symbols:
+      - SOL/USDT
+      - ADA/USDT
+
+    risk:
+      stop_loss_pct: 0.05
+      take_profit_pct: 0.05
+
+    state:
+      last_signal_time: null
+      open_positions: []
+
+  # 策略3: RSI超买超卖 (激进)
+  rsi:
+    enabled: false  # 默认关闭
+
+    name: "RSI Overbought/Oversold"
+
+    parameters:
+      period: 14          # RSI周期
+      oversold: 30        # 超卖阈值
+      overbought: 70      # 超买阈值
+
+    timeframe: 1d
+
+    symbols:
+      - DOGE/USDT
+      - SHIB/USDT
+
+    risk:
+      stop_loss_pct: 0.06
+      take_profit_pct: 0.10
+
+    state:
+      last_signal_time: null
+      open_positions: []
+
+# ============================================================
+# 5. 风险管理配置
+# ============================================================
+risk_management:
+  # 仓位管理
+  position:
+    max_position_size: 0.10     # 单仓最大占总资金比例 (10%)
+    max_open_positions: 3       # 最大同时持仓数
+    total_exposure: 0.15        # 总持仓不超过15%
+
+  # 止损止盈
+  stop_loss:
+    enabled: true
+    default_stop_loss_pct: 0.03   # 默认3%止损
+    trailing_stop: true           # 启用移动止损
+    trailing_stop_pct: 0.01       # 移动止损1%
+
+  take_profit:
+    enabled: true
+    default_take_profit_pct: 0.06  # 默认6%止盈
+    partial_take_profit: true      # 部分止盈
+    partial_levels:
+      - percent: 0.50     # 盈利3%时平仓50%
+        trigger: 0.03
+      - percent: 1.00     # 盈利6%时全部平仓
+        trigger: 0.06
+
+  # 每日限制
+  daily_limits:
+    max_daily_trades: 10      # 每日最大交易笔数
+    max_daily_loss: 0.05      # 每日最大亏损5%
+    max_daily_gain: 0.15      # 每日最大盈利15% (防止过度贪婪)
+
+  # 每周限制
+  weekly_limits:
+    max_weekly_loss: 0.10     # 每周最大亏损10%
+
+  # 风险回报比
+  risk_reward:
+    min_ratio: 2.0            # 最小盈亏比2:1
+    check_before_trade: true  # 开仓前检查
+
+  # 流动性要求
+  liquidity:
+    min_volume_24h: 1000000   # 最小24小时交易量(USDT)
+    min_order_depth: 50000    # 最小订单深度(USDT)
+
+  # 相关性风险
+  correlation:
+    max_correlation: 0.8      # 最大相关性阈值
+    check_before_trade: true  # 开仓前检查
+
+# ============================================================
+# 6. 订单执行配置
+# ============================================================
+order_execution:
+  # 默认订单类型: market | limit
+  default_order_type: limit  # 使用限价单，减少滑点
+
+  # 订单超时(秒)
+  order_timeout: 60
+
+  # 订单重试
+  retry:
+    enabled: true
+    max_retries: 3
+    retry_interval: 5  # 秒
+
+  # 滑点控制
+  slippage:
+    max_slippage_pct: 0.001  # 最大滑点0.1%
+    use_limit_orders: true   # 使用限价单控制滑点
+
+  # 订单确认
+  confirmation:
+    require_manual_confirm: true  # ⚠️ 実盘需要人工确认
+    timeout: 300                  # 确认超时(秒)，超时自动取消
+
+# ============================================================
+# 7. 回测配置
+# ============================================================
+backtest:
+  # 回测周期
+  start_date: "2023-01-01"
+  end_date: "2024-01-01"
+
+  # 初始资金(USDT)
+  initial_capital: 10000
+
+  # 手续费配置
+  fee:
+    maker: 0.001    # Maker手续费 0.1%
+    taker: 0.001    # Taker手续费 0.1%
+
+  # 滑点模拟
+  slippage:
+    enabled: true
+    default_slippage: 0.0005  # 0.05%
+
+  # 回测性能指标
+  metrics:
+    - total_return
+    - annualized_return
+    - max_drawdown
+    - sharpe_ratio
+    - sortino_ratio
+    - win_rate
+    - profit_loss_ratio
+    - calmar_ratio
+
+  # 参数优化
+  optimization:
+    enabled: false  # 参数优化较耗时
+    method: grid    # grid | random | bayesian
+    cv_folds: 5     # 交叉验证折数
+
+# ============================================================
+# 8. 监控和报警配置
+# ============================================================
+monitor:
+  # 监控间隔(秒)
+  check_interval: 5
+
+  # 性能监控
+  performance:
+    enabled: true
+    cpu_threshold: 80      # CPU使用率阈值(%)
+    memory_threshold: 80   # 内存使用率阈值(%)
+    disk_threshold: 80     # 磁盘使用率阈值(%)
+
+  # 交易指标监控
+  trading_metrics:
+    enabled: true
+    interval: 60  # 秒
+
+  # 报警规则
+  alerts:
+    # 警告级别告警
+    - level: WARNING
+      condition: "daily_loss > 0.03"
+      message: "单日亏损超过3%"
+      enabled: true
+
+    - level: WARNING
+      condition: "api_latency > 5000"
+      message: "API延迟超过5秒"
+      enabled: true
+
+    # 错误级别告警
+    - level: ERROR
+      condition: "daily_loss > 0.05"
+      message: "单日亏损超过5%"
+      enabled: true
+
+    - level: ERROR
+      condition: "api_failure_rate > 0.1"
+      message: "API失败率超过10%"
+      enabled: true
+
+    - level: ERROR
+      condition: "order_timeout > 60"
+      message: "订单超时超过60秒"
+      enabled: true
+
+    # 致命级别告警
+    - level: CRITICAL
+      condition: "total_loss > 0.10"
+      message: "累计亏损超过10%，触发熔断"
+      enabled: true
+
+  # 通知配置
+  notifications:
+    # 控制台通知
+    console:
+      enabled: true
+      color: true
+
+    # Telegram通知
+    telegram:
+      enabled: false
+      bot_token: ${TELEGRAM_BOT_TOKEN}
+      chat_id: ${TELEGRAM_CHAT_ID}
+
+    # 邮件通知
+    email:
+      enabled: false
+      smtp_server: "smtp.gmail.com"
+      smtp_port: 587
+      username: ${EMAIL_USERNAME}
+      password: ${EMAIL_PASSWORD}
+      from_email: "trading-bot@example.com"
+      to_email: ${TO_EMAIL}
+      daily_report:
+        enabled: true
+        time: "09:00"  # 每日报告时间
+
+# ============================================================
+# 9. Web监控面板配置
+# ============================================================
+web_panel:
+  enabled: true
+  host: "0.0.0.0"
+  port: 5000
+  debug: false
+
+  # 认证配置
+  auth:
+    enabled: true
+    username: admin
+    password: ${WEB_PANEL_PASSWORD}
+
+  # 图表配置
+  charts:
+    refresh_interval: 5  # 秒
+    show_realtime: true
+
+# ============================================================
+# 10. 数据库配置
+# ============================================================
+database:
+  # 数据库类型: sqlite | postgresql | mysql
+  type: sqlite
+
+  # SQLite配置 (默认)
+  sqlite:
+    path: ./data/trading.db
+    backup_enabled: true
+    backup_interval: 86400  # 24小时备份一次
+    backup_dir: ./data/backups
+
+  # PostgreSQL配置 (可选)
+  postgresql:
+    host: localhost
+    port: 5432
+    database: trading_bot
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  # 数据保留策略
+  retention:
+    # 交易记录: 永久保留
+    trades: "permanent"
+
+    # 订单记录: 保留90天
+    orders: "90 days"
+
+    # 事件日志: 保留30天
+    events: "30 days"
+
+    # K线数据: 保留1年
+    candles: "365 days"
+
+# ============================================================
+# 11. 日志配置
+# ============================================================
+logging:
+  # 日志格式
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+  # 日志文件配置
+  file:
+    enabled: true
+    max_size: 10  # MB
+    backup_count: 5
+
+  # 分类日志
+  modules:
+    trading:
+      level: INFO
+      file: trading.log
+
+    system:
+      level: INFO
+      file: system.log
+
+    strategy:
+      level: DEBUG
+      file: strategy.log
+
+    risk:
+      level: WARNING
+      file: risk.log
+
+# ============================================================
+# 12. 生产环境安全配置 (仅在生产模式生效)
+# ============================================================
+production_safety:
+  # 手动确认: 实盘交易必须人工确认
+  manual_confirm_required: true
+
+  # 交易限制
+  max_daily_trades: 10
+  max_daily_loss: 0.05       # 5%
+  emergency_stop_on_loss: 0.10  # 10%
+
+  # API安全
+  require_2fa: true
+  ip_whitelist_enabled: false
+  ip_whitelist:
+    - "127.0.0.1"
+    - "::1"
+
+  # 冷却期: 连续亏损后停止交易
+  cooling_period:
+    enabled: true
+    consecutive_losses: 3      # 连续3笔亏损
+    cooldown_hours: 24         # 停止24小时
+
+# ============================================================
+# 13. 扩展性配置
+# ============================================================
+extensions:
+  # 插件目录
+  plugins_dir: ./plugins
+
+  # 允许的插件
+  enabled_plugins:
+    - data_storage
+    - notifications
+
+# ============================================================
+# 14. 开发者配置 (仅调试模式生效)
+# ============================================================
+developer:
+  # 保存原始数据
+  save_raw_data: false
+
+  # 策略调试
+  strategy_debug:
+    log_signals: true
+    log_indicators: false
+
+  # 回测调试
+  backtest_debug:
+    log_trades: true
+    save_results: true
+
+# ============================================================
+# 配置文件说明
+# ============================================================
+#
+# 1. 环境变量:
+#    所有敏感信息(API密钥、密码等)都应通过环境变量提供
+#    示例:
+#      export OKX_API_KEY="your_api_key"
+#      export OKX_SECRET_KEY="your_secret_key"
+#      export WEB_PANEL_PASSWORD="your_password"
+#
+# 2. 配置优先级:
+#    命令行参数 > 环境变量 > 配置文件 > 默认值
+#
+# 3. 模拟盘 vs 实盘:
+#    - simulation: OKX Demo Trading，无真实资金风险
+#    - production: 真实交易，需谨慎！
+#
+# 4. 风险参数调整:
+#    ⚠️ 调整风险参数前务必进行充分回测
+#    ⚠️ 建议从小仓位开始测试
+#    ⚠️ 盈利时不要随意放宽风险参数
+#
+# ============================================================

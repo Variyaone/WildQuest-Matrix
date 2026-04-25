@@ -1,0 +1,204 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+.venv-*
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Linting
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Data files
+data/
+!data/.gitkeep
+*.parquet
+*.csv
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+
+# Logs
+logs/
+*.log
+
+# Config
+config.yaml
+config.local.yaml
+.env.local
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*.tar.gz
+*.zip
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Trae IDE
+.trae/
+
+# Cache directories
+pickle_cache/
+workspace_cache/
+data/cache/
+
+# Factor library (因子库)
+data/factors/
+
+# Strategy library (策略库)
+data/strategies/
+
+# Reports (报告)
+data/reports/
+
+# Backups (备份)
+backups/
+data/backups/
+backup/
+
+# Test files (测试文件)
+tests/
+test_package/
+test_*.py
+test_*.sh
+*_test.py
+
+# Debug files (调试文件)
+debug_*.py
+check_*.py
+verify_*.py
+standalone_*.py
+
+# Temporary scripts (临时脚本)
+setup_*.sh
+cleanup_*.sh
+run_*.sh
+
+# Papers and research (论文和研究资料)
+papers/
+*.pdf
+
+# Backtest results (回测结果)
+backtest_results/
+backtest_*.json
+
+# Temporary JSON files (临时JSON文件)
+extracted_factors.json
+processed_papers.json
+converted_*.json
+!config/*.example
+
+# Cache databases (缓存数据库)
+*.db
+*.sqlite
+*.sqlite3
+
+# Sensitive config (敏感配置)
+config/pipeline_config.json
+config/risk_limits.json
+config/data.yaml
+config/feishu_config.json
+.env.*
+!.env.example
+!config/*.example
+
+# Factor library data (因子库数据)
+data/factors/**/*.pkl
+data/factors/**/*.parquet
+data/factors/**/*.csv
+data/factors/**/*.h5
+
+# Strategy library data (策略库数据)
+data/strategies/**/*.pkl
+data/strategies/**/*.parquet
+data/strategies/**/*.csv
+data/strategies/**/*.h5
+
+# Reports (报告)
+data/reports/**/*.pdf
+data/reports/**/*.html
+
+# Logs and outputs (日志和输出)
+logs/
+log/
+output/
+*.log
+
+# RD-Agent workspace (RD-Agent工作目录)
+git_ignore_folder/
+RD-Agent_workspace/
+
+# Requirements temp files (依赖临时文件)
+requirements_*.txt
+!requirements.txt

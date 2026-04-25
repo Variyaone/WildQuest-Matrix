@@ -1,0 +1,62 @@
+{
+  "annual_return": {
+    "value": 0.17467169428636153,
+    "format": "17.47%",
+    "grade": "优秀"
+  },
+  "annual_volatility": {
+    "value": 0.2298535857881847,
+    "format": "22.99%",
+    "grade": "中"
+  },
+  "sharpe_ratio": {
+    "value": 0.6294080372523742,
+    "format": "0.63",
+    "grade": "差"
+  },
+  "max_drawdown": {
+    "value": -0.1952685111940778,
+    "format": "-19.53%",
+    "grade": "一般"
+  },
+  "calmar_ratio": {
+    "value": 0.8945205410653998,
+    "format": "0.89",
+    "grade": "良好"
+  },
+  "monthly_win_rate": {
+    "value": 0.5833333333333334,
+    "format": "58.3%",
+    "grade": "一般"
+  },
+  "profit_loss_ratio": {
+    "value": 1.0022831838371173,
+    "format": "1.00",
+    "grade": "一般"
+  },
+  "information_ratio": {
+    "value": 0.0032347848739033387,
+    "format": "0.00",
+    "grade": "差"
+  },
+  "sortino_ratio": {
+    "value": 1.1518818711041354,
+    "format": "1.15",
+    "grade": "一般"
+  },
+  "var_95": {
+    "value": -0.02162302518716086,
+    "format": "-2.16%",
+    "grade": "N/A"
+  },
+  "cvar_95": {
+    "value": -0.02696743592056375,
+    "format": "-2.70%",
+    "grade": "N/A"
+  },
+  "data_points": {
+    "value": 252.0,
+    "format": "252个交易日",
+    "grade": "N/A"
+  }
+}

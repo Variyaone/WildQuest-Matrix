@@ -1,0 +1,164 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-03-01T03:15:52.409290",
+  "pool": {
+    "pending": [],
+    "in_progress": [
+      {
+        "id": "TASK-1772302848",
+        "title": "研究Alpha因子开发策略",
+        "description": "",
+        "type": "research",
+        "priority": "high",
+        "status": "in_progress",
+        "created_at": "2026-03-01T02:20:48.860908",
+        "assigned_to": "researcher",
+        "progress": 0,
+        "retry_count": 0,
+        "started_at": "2026-03-01T02:22:27.483429"
+      },
+      {
+        "id": "TASK-1772302900",
+        "title": "设计新的系统架构",
+        "description": "",
+        "type": "design",
+        "priority": "high",
+        "status": "in_progress",
+        "created_at": "2026-03-01T02:21:00.525415",
+        "assigned_to": "innovator",
+        "progress": 0,
+        "retry_count": 0,
+        "started_at": "2026-03-01T02:22:27.483480"
+      },
+      {
+        "id": "TASK-1772302859",
+        "title": "执行量化回测",
+        "description": "",
+        "type": "execution",
+        "priority": "medium",
+        "status": "in_progress",
+        "created_at": "2026-03-01T02:20:59.525415",
+        "assigned_to": "executor",
+        "progress": 0,
+        "retry_count": 0,
+        "started_at": "2026-03-01T02:22:27.483525"
+      },
+      {
+        "id": "TASK-1772306149",
+        "title": "验证subagent启动",
+        "description": "",
+        "type": "execution",
+        "priority": "medium",
+        "status": "in_progress",
+        "created_at": "2026-03-01T03:15:49.755725",
+        "assigned_to": "executor",
+        "progress": 0,
+        "retry_count": 0,
+        "started_at": "2026-03-01T03:15:51.744273",
+        "spawn_info": {
+          "spawned_at": "2026-03-01T03:15:52.409218",
+          "error": "Gateway agent failed; falling back to embedded: Error: Unknown agent id \"executor\". Use \"openclaw agents list\" to see configured agents.\nError: Unknown agent id \"executor\". Use \"openclaw agents list\" to see configured agents.\n",
+          "failed": true
+        }
+      }
+    ],
+    "completed": [],
+    "failed": [
+      {
+        "id": "TASK-1772306109",
+        "title": "测试subagent启动",
+        "description": "",
+        "type": "research",
+        "priority": "high",
+        "status": "failed",
+        "created_at": "2026-03-01T03:15:09.720540",
+        "assigned_to": "researcher",
+        "progress": 0,
+        "retry_count": 2,
+        "started_at": "2026-03-01T03:15:12.307492",
+        "spawn_info": {
+          "spawned_at": "2026-03-01T03:15:13.034530",
+          "error": "error: required option '-m, --message <text>' not specified\n",
+          "failed": true
+        },
+        "failed_at": "2026-03-01T03:15:13.034542",
+        "reason": "启动subagent失败: error: required option '-m, --message <text>' not specified\n"
+      }
+    ]
+  },
+  "agents": {
+    "commander": {
+      "name": "指挥官",
+      "status": "active",
+      "current_tasks": [],
+      "capabilities": [
+        "decision",
+        "coordination",
+        "monitoring"
+      ],
+      "last_active": null
+    },
+    "researcher": {
+      "name": "研究员",
+      "status": "active",
+      "current_tasks": [
+        "TASK-1772302848"
+      ],
+      "capabilities": [
+        "research",
+        "analysis",
+        "data_processing"
+      ],
+      "last_active": "2026-03-01 03:15"
+    },
+    "executor": {
+      "name": "执行者",
+      "status": "active",
+      "current_tasks": [
+        "TASK-1772302859",
+        "TASK-1772306149"
+      ],
+      "capabilities": [
+        "execution",
+        "automation",
+        "monitoring"
+      ],
+      "last_active": "2026-03-01 03:15"
+    },
+    "innovator": {
+      "name": "创新者",
+      "status": "active",
+      "current_tasks": [
+        "TASK-1772302900"
+      ],
+      "capabilities": [
+        "design",
+        "optimization",
+        "architecture"
+      ],
+      "last_active": "2026-03-01 02:22"
+    }
+  },
+  "statistics": {
+    "total_tasks": 5,
+    "pending": 0,
+    "in_progress": 4,
+    "completed": 0,
+    "failed": 1
+  },
+  "auto_allocation": {
+    "enabled": true,
+    "rules": [
+      "Priority tasks get allocated first",
+      "Research tasks go to researcher",
+      "Execution tasks go to executor",
+      "Design tasks go to innovator",
+      "Coordination goes to commander"
+    ]
+  },
+  "retry_policy": {
+    "max_retries": 3,
+    "backoff_seconds": 300,
+    "retry_on_failure": true
+  }
+}

@@ -1,0 +1,57 @@
+[
+  {
+    "name": "量化交易系统年化收益20%",
+    "deadline": "2026-03-31",
+    "progress": 45,
+    "status": "进行中",
+    "milestones": [
+      {"name": "策略研发完成", "date": "2026-02-28", "status": "done"},
+      {"name": "回测验证", "date": "2026-03-07", "status": "in_progress"},
+      {"name": "实盘测试", "date": "2026-03-14", "status": "pending"}
+    ],
+    "last_update": "2026-02-28 18:29",
+    "current_state": "A股回测已完成，OKX资金费套利策略已就绪，等待真实数据验证和实盘测试"
+  },
+  {
+    "name": "A股量化系统完整交付",
+    "deadline": "2026-02-28",
+    "progress": 100,
+    "status": "已完成",
+    "milestones": [
+      {"name": "Phase 1: 真实数据接入", "date": "2026-02-28", "status": "done"},
+      {"name": "Phase 2: 因子有效性检验", "date": "2026-02-28", "status": "done"},
+      {"name": "Phase 3: 策略系统化", "date": "2026-02-28", "status": "done"},
+      {"name": "Phase 4: 自动化交付", "date": "2026-02-28", "status": "done"}
+    ],
+    "last_update": "2026-02-28 18:29",
+    "current_state": "已完成交付。但存在关键缺陷：1）历史绩效数据缺失；2）过拟合风险未知；3）风格暴露过度。已创建CRITICAL_ISSUES.md记录所有问题，开始P0紧急改进"
+  },
+  {
+    "name": "系统熵值降低50%",
+    "deadline": "2026-03-07",
+    "progress": 100,
+    "status": "已完成",
+    "milestones": [
+      {"name": "诊断分析", "date": "2026-02-28", "status": "done"},
+      {"name": "清理冗余", "date": "2026-02-28", "status": "done"},
+      {"name": "优化结构", "date": "2026-02-28", "status": "done"}
+    ],
+    "last_update": "2026-02-28 18:29",
+    "current_state": "已完成系统熵值清理，但需持续监控"
+  },
+  {
+    "name": "A股量化系统P0紧急改进",
+    "deadline": "2026-03-07",
+    "progress": 10,
+    "status": "紧急进行中",
+    "milestones": [
+      {"name": "补充历史绩效指标", "date": "2026-03-01", "status": "pending"},
+      {"name": "执行过拟合检测", "date": "2026-03-01", "status": "pending"},
+      {"name": "完成流动性风险分析", "date": "2026-03-02", "status": "pending"},
+      {"name": "因子拥挤度分析", "date": "2026-03-05", "status": "pending"},
+      {"name": "风格暴露分析", "date": "2026-03-05", "status": "pending"}
+    ],
+    "last_update": "2026-02-28 17:55",
+    "current_state": "已识别致命缺陷，开始P0紧急改进任务"
+  }
+]
