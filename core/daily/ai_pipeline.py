@@ -342,9 +342,9 @@ def step4_strategy_exec_ai() -> Dict[str, Any]:
     if len(strategies) == 0:
         print("    ⚠️ 没有注册策略，跳过选股")
         return {"status": "warning", "selections": 0, "message": "没有注册策略"}
-    
+
     data_paths = get_data_paths()
-    stock_files = list(Path(data_paths.stocks_daily_path).glob("*.parquet"))[:100]
+    stock_files = list(Path(data_paths.stocks_daily_path).glob("*.parquet"))  # 移除股票数量限制
     
     stock_scores = []
     

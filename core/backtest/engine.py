@@ -121,6 +121,7 @@ class Portfolio:
     ):
         """更新持仓"""
         trade_value = quantity * price
+        pnl = 0.0
         
         if direction == 'buy':
             self.cash -= (trade_value + cost)
@@ -142,6 +143,10 @@ class Portfolio:
             self.cash += (trade_value - cost)
             
             if stock_code in self.positions:
+                # 计算盈亏
+                avg_cost = self.positions[stock_code]['avg_cost']
+                pnl = (price - avg_cost) * quantity - cost
+                
                 self.positions[stock_code]['quantity'] -= quantity
                 if self.positions[stock_code]['quantity'] <= 0:
                     del self.positions[stock_code]
@@ -153,6 +158,7 @@ class Portfolio:
             'price': price,
             'value': trade_value,
             'cost': cost,
+            'pnl': pnl,
             'timestamp': datetime.now()
         })
     
@@ -275,10 +281,14 @@ class BacktestEngine:
         """设置回测数据"""
         self._data = data.copy()
         
+        # 重置索引，确保iloc[-1]返回最后一行
+        self._data = self._data.reset_index(drop=True)
+        
         time_column = 'datetime' if 'datetime' in self._data.columns else 'date'
         if time_column in self._data.columns:
             self._data[time_column] = pd.to_datetime(self._data[time_column])
             self._data = self._data.sort_values(time_column)
+            self._data = self._data.reset_index(drop=True)
         
         if self.config.frequency == 'auto':
             detected = detect_data_frequency(self._data, time_column)
@@ -677,6 +687,8 @@ class BacktestEngine:
         for trade in self._portfolio.trades:
             trade_copy = trade.copy()
             if 'timestamp' in trade_copy:
+                # 添加date字段用于胜率计算
+                trade_copy['date'] = trade_copy['timestamp']
                 trade_copy['timestamp'] = trade_copy['timestamp'].isoformat()
             trades.append(trade_copy)
         
@@ -834,6 +846,9 @@ class BacktestEngine:
         factor_data['date'] = pd.to_datetime(factor_data['date'])
         dates = sorted(factor_data['date'].unique())
         
+        # 设置回测数据
+        self.set_data(factor_data)
+        
         if len(dates) < 10:
             logger.error("日期数量不足")
             return {
@@ -869,6 +884,8 @@ class BacktestEngine:
                 for stock_code in list(current_holdings.keys()):
                     shares = current_holdings[stock_code]
                     
+                    logger.info(f"准备卖出 {stock_code}, 持仓数量: {shares}")
+                    
                     try:
                         stock_history = self._data[
                             (self._data['stock_code'] == stock_code) & 
@@ -887,6 +904,8 @@ class BacktestEngine:
                                 'shares': shares,
                                 'price': sell_price
                             })
+                            
+                            logger.info(f"成功卖出 {stock_code}, 价格: {sell_price}, 收益: {proceeds}")
                     except Exception as e:
                         logger.warning(f"卖出 {stock_code} 失败: {e}")
                     
@@ -975,10 +994,25 @@ class BacktestEngine:
         drawdown = (cumulative - running_max) / running_max
         max_drawdown = abs(drawdown.min())
         
-        winning_trades = sum(1 for t in trades if t['direction'] == 'sell' and 
-                            any(t2['stock_code'] == t['stock_code'] and t2['direction'] == 'buy' and t2['date'] < t['date'] 
-                                for t2 in trades))
+        # 正确计算胜率：匹配买入和卖出交易，计算盈亏
+        winning_trades = 0
         total_sell_trades = sum(1 for t in trades if t['direction'] == 'sell')
+        
+        if total_sell_trades > 0:
+            for sell_trade in trades:
+                if sell_trade['direction'] == 'sell':
+                    # 找到对应的买入交易
+                    buy_trades = [t for t in trades 
+                                 if t['stock_code'] == sell_trade['stock_code'] 
+                                 and t['direction'] == 'buy' 
+                                 and t['date'] < sell_trade['date']]
+                    
+                    if buy_trades:
+                        # 使用最近一次买入的价格
+                        buy_trade = max(buy_trades, key=lambda x: x['date'])
+                        if sell_trade['price'] > buy_trade['price']:
+                            winning_trades += 1
+        
         win_rate = winning_trades / total_sell_trades if total_sell_trades > 0 else 0
         
         duration = time.time() - start_time

@@ -1,0 +1,20 @@
+2026-04-29 23:35:38,586 - a_stock_advisor.pipeline.quality_manager - INFO - 步骤 data_update 质量检查: warning (等级: good)
+2026-04-29 23:35:38,586 - a_stock_advisor.pipeline.quality_manager - WARNING -   警告: 部分指标未达标
+2026-04-29 23:35:51,969 - a_stock_advisor.pipeline.quality_manager - INFO - 步骤 factor_calculation 质量检查: warning (等级: good)
+2026-04-29 23:35:51,970 - a_stock_advisor.pipeline.quality_manager - WARNING -   警告: 部分指标未达标
+2026-04-29 23:35:52,614 - a_stock_advisor.strategy.alpha_generator - INFO - 使用预先计算的因子组合: 32 个因子
+2026-04-29 23:35:52,771 - a_stock_advisor.pipeline.quality_manager - INFO - 步骤 alpha_generation 质量检查: warning (等级: good)
+2026-04-29 23:35:52,771 - a_stock_advisor.pipeline.quality_manager - WARNING -   警告: 部分指标未达标
+2026-04-29 23:36:15,366 - a_stock_advisor.pipeline.quality_manager - INFO - 步骤 backtest 质量检查: pass (等级: excellent)
+2026-04-29 23:36:15,366 - a_stock_advisor.pipeline.quality_manager - INFO - 步骤 portfolio_optimization 质量检查: warning (等级: good)
+2026-04-29 23:36:15,366 - a_stock_advisor.pipeline.quality_manager - WARNING -   警告: 部分指标未达标
+2026-04-29 23:36:15,370 - a_stock_advisor.pipeline.quality_manager - INFO - 步骤 risk_check 质量检查: warning (等级: acceptable)
+2026-04-29 23:36:15,370 - a_stock_advisor.pipeline.quality_manager - WARNING -   警告: 多项指标未达标
+2026-04-29 23:36:41,047 - a_stock_advisor.daily.report_generator - INFO - 开始生成日报: 2026-04-29
+2026-04-29 23:36:52,345 - a_stock_advisor.daily.report_generator - INFO - 日报生成完成: ./data/reports/daily/daily_report_2026-04-29.md
+2026-04-29 23:36:52,348 - a_stock_advisor.daily.notifier - INFO - 开始日报推送
+2026-04-29 23:36:52,348 - a_stock_advisor.daily.notifier - WARNING - 已跳过前置检查，这可能存在风险
+2026-04-29 23:36:53,100 - a_stock_advisor.daily.notifier - INFO - Webhook推送成功
+2026-04-29 23:36:53,103 - a_stock_advisor.daily.notifier - INFO - 日报推送成功
+2026-04-29 23:58:17,697 - a_stock_advisor.daily.report_generator - INFO - 开始生成日报: 2026-04-29
+2026-04-29 23:58:23,435 - a_stock_advisor.daily.report_generator - INFO - 日报生成完成: ./data/reports/daily/daily_report_2026-04-29_235823.md

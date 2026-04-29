@@ -1,0 +1,9 @@
+{
+  "max_position": 0.76,
+  "single_stock_weight": 0.08000000000000002,
+  "stop_loss": {
+    "enabled": false,
+    "threshold": -0.05,
+    "method": "percentage"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "holding_period": 5,
+  "top_n": 30,
+  "take_profit": {
+    "enabled": false,
+    "threshold": 0.1
+  },
+  "stop_loss": {
+    "enabled": false,
+    "threshold": -0.05
+  },
+  "selection_logic": {
+    "method": "single_factor",
+    "factors": ["momentum"],
+    "weights": [1.0]
+  },
+  "execution": {
+    "calculate_quantity": false,
+    "quantity_method": "equal_weight",
+    "single_stock_weight": 0.1
+  }
+}

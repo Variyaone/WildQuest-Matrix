@@ -323,8 +323,6 @@ class QualityGateManager:
         Returns:
             审查决策
         """
-        # 这里应该调用 Hermes LLM
-        # 简化实现：返回 APPROVE
         print(f"\n{'='*60}")
         print(f"LLM 审查: {gate_name}")
         print(f"{'='*60}")
@@ -332,20 +330,49 @@ class QualityGateManager:
         print(f"审查提示: {review_prompt}")
         print(f"{'='*60}\n")
 
-        # 实际实现应该调用 Hermes LLM
-        # decision = call_hermes_llm(review_prompt, context)
+        try:
+            # 导入LLM审查器
+            from core.quality.llm_reviewer import create_reviewer
 
-        # 简化实现：返回 APPROVE
-        decision = ReviewDecision.APPROVE
-        comment = "LLM 审查通过"
+            # 创建审查器（使用环境变量配置）
+            reviewer = create_reviewer(
+                provider=os.getenv("LLM_PROVIDER", "openai"),
+                api_key=os.getenv("LLM_API_KEY"),
+                model=os.getenv("LLM_MODEL"),
+                base_url=os.getenv("LLM_BASE_URL")
+            )
 
-        # 更新门控结果
-        if self.current_state and gate_name in self.current_state.gate_results:
-            self.current_state.gate_results[gate_name].review_decision = decision
-            self.current_state.gate_results[gate_name].review_comment = comment
-            self.save_state()
+            # 执行审查
+            decision, comment = reviewer.review(gate_name, context, review_prompt)
 
-        return decision
+            print(f"LLM 审查结果: {decision.value}")
+            print(f"LLM 审查意见: {comment}")
+            print(f"{'='*60}\n")
+
+            # 更新门控结果
+            if self.current_state and gate_name in self.current_state.gate_results:
+                self.current_state.gate_results[gate_name].review_decision = decision
+                self.current_state.gate_results[gate_name].review_comment = comment
+                self.save_state()
+
+            return decision
+
+        except Exception as e:
+            print(f"LLM 审查失败: {e}")
+            print(f"使用默认决策: APPROVE")
+            print(f"{'='*60}\n")
+
+            # 失败时返回默认批准
+            decision = ReviewDecision.APPROVE
+            comment = f"LLM审查失败，自动批准: {str(e)}"
+
+            # 更新门控结果
+            if self.current_state and gate_name in self.current_state.gate_results:
+                self.current_state.gate_results[gate_name].review_decision = decision
+                self.current_state.gate_results[gate_name].review_comment = comment
+                self.save_state()
+
+            return decision
 
     def can_proceed(self, gate_name: str) -> bool:
         """

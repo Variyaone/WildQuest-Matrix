@@ -1,4 +1,0 @@
-  File "/Users/variya/.openclaw/workspace/.commander/work_logs/quick_backtest_20260227_005139.py", line 102
-    report += f"| {i+1} | {row['name']} | {row['ic']:.4f} | {quality} |
-                                                                       ^
-SyntaxError: EOL while scanning string literal

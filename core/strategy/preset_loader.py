@@ -23,7 +23,7 @@ from .factor_combiner import FactorCombinationConfig
 
 PRESET_STRATEGIES_FILE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-    "data", "strategies", "preset_strategies.json"
+    "data", "strategies", "optimized_strategies_v2.json"
 )
 
 

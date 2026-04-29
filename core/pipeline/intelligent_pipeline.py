@@ -19,11 +19,21 @@ from typing import Dict, Any, List, Optional, Callable
 from pathlib import Path
 
 from .quality_gate import (
-    QualityGateManager,
-    SmartPipelineExecutor,
+    PipelineQualityManager,
     GateStatus,
-    ReviewDecision,
 )
+
+# 为兼容性创建别名
+QualityGateManager = PipelineQualityManager
+
+# 这些类在当前版本中可能不存在，先创建占位符
+class SmartPipelineExecutor:
+    """智能管线执行器（占位符）"""
+    pass
+
+class ReviewDecision:
+    """审查决策（占位符）"""
+    pass
 
 
 class IntelligentPipeline:

@@ -1,0 +1,23 @@
+{
+  "factor_selection": {
+    "max_correlation": 0.8,
+    "min_ic": 0.02
+  },
+  "factors": {
+    "momentum_20d": {
+      "ic": 0.05,
+      "name": "20日动量",
+      "weight": 0.15
+    },
+    "reversal_5d": {
+      "ic": 0.04,
+      "name": "5日反转",
+      "weight": 0.1
+    },
+    "volume_ratio": {
+      "ic": 0.03,
+      "name": "量比",
+      "weight": 0.1
+    }
+  }
+}

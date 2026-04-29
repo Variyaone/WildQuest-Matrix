@@ -1,5 +1,149 @@
 # WildQuest Matrix 更新日志
 
+## v6.5.3 (2026-04-29)
+
+### 清理优化
+
+#### 根目录冗余文件清理
+
+清理了根目录下 19 个废弃/冗余文件和 3 个废弃目录，释放约 2GB 磁盘空间。
+
+**删除的一次性脚本（4个）：**
+- `fix_root_cause.py` - 一次性调试脚本，不被任何活跃代码引用
+- `full_workflow_with_diagnosis.py` - 一次性工作流脚本
+- `full_workflow_with_llm_review.py` - 一次性工作流脚本
+- `llm_review_report.py` - 一次性LLM审核脚本
+
+**删除的安全风险文件（2个）：**
+- `mcp-install-research.md` - 包含明文API密钥（Tavily/Google Gemini）
+- `WEB_SEARCH_CONFIG.md` - 包含明文API密钥（Brave Search）
+
+**删除的废弃配置（2个）：**
+- `.env.rdagent` - rdagent专用环境变量，已过时
+- `requirements_paper_search.txt` - 仅2个依赖，无任何引用
+
+**删除的冗余文档（6个）：**
+- `CONFIG_CHANGE_LOG.md` - 与CHANGELOG重复
+- `RELEASE_NOTES.md` - 与CHANGELOG重复
+- `WORKFLOW_IMPROVEMENT_SUMMARY.md` - 一次性改进总结
+- `workspace-file-structure.md` - 冗余元文档
+- `a-stock-takeover.md` - 历史决策记录，已过时
+- `BOOTSTRAP.md` - 初始化模板，文件自身说明"设置完成后删除"
+
+**删除的空模板文件（3个）：**
+- `IDENTITY.md` - 从未填写的空模板
+- `USER.md` - 从未填写的空模板
+- `TOOLS.md` - 从未填写的空模板
+
+**删除的废弃目录（3个，共释放~2GB）：**
+- `.venv-rdagent/` (1.3GB) - rdagent虚拟环境，无任何引用
+- `.trash/` (723MB) - 垃圾箱目录
+- `projects/` (5.5MB) - 根目录的旧副本及未引用的collect脚本
+
+---
+
+## v6.5.2 (2026-04-28)
+
+### 新增功能
+
+#### LLM审核与根本问题修复系统
+
+**核心功能：**
+- ✅ LLM审核 - 自动审核报告是否满足交易要求
+- ✅ 问题根源诊断 - 智能诊断问题根源（策略、因子、风险、数据）
+- ✅ 根本问题修复 - 自动修复根本问题
+- ✅ 配置文件管理 - 因子、策略、风险控制配置文件
+
+**审核标准：**
+- 能够盈利：年化收益≥5%，夏普比率≥0.5，胜率≥50%
+- 风险可控：最大回撤≤-20%，波动率≤30%
+- 可以操作：有明确的买入数量和价格，买入信号数量≥5个
+
+**问题根源诊断：**
+- 盈利能力问题 → 诊断是策略问题还是因子问题
+- 风险控制问题 → 诊断是风险控制问题还是策略问题
+- 可操作性问题 → 诊断是数据问题还是策略问题
+
+**根本问题修复：**
+- 因子问题 → 优化因子组合，提高因子质量
+- 策略问题 → 优化选股逻辑，调整选股参数，添加止盈止损
+- 风险控制问题 → 优化仓位管理，添加止损机制
+- 数据问题 → 重新获取股票数据，确保数据完整
+
+**新增命令：**
+```bash
+# LLM审核报告
+python3 llm_review_report.py data/reports/daily/daily_report_2026-04-28_201232.md
+
+# 修复根本问题
+python3 fix_root_cause.py <diagnoses_json>
+
+# 完整工作流（包含LLM审核和根本问题修复）
+python3 full_workflow_with_diagnosis.py
+
+# 测试诊断和修复流程
+python3 test_diagnosis_and_fix.py
+```
+
+**新增文件：**
+- `llm_review_report.py` - LLM审核报告脚本（包含诊断功能）
+- `fix_root_cause.py` - 修复根本问题脚本
+- `full_workflow_with_diagnosis.py` - 完整工作流脚本（包含诊断和修复）
+- `test_diagnosis_and_fix.py` - 测试诊断和修复流程脚本
+- `config/factor_config.json` - 因子配置
+- `config/strategy_config.json` - 策略配置
+- `config/risk_config.json` - 风险控制配置
+- `WORKFLOW_IMPROVEMENT_SUMMARY.md` - 工作流改进总结
+
+**审核流程：**
+```
+生成报告 → LLM审核报告 → 审核通过 → 推送报告
+                    ↓
+                 审核不通过
+                    ↓
+              诊断问题根源
+                    ↓
+              修复根本问题
+                    ↓
+              重新运行工作流
+                    ↓
+              重新审核报告
+```
+
+### 优化改进
+
+#### 工作流改进
+
+**改进前：**
+- 简单改进报告（比如添加价格和数量）
+- 没有诊断问题根源
+- 没有修复根本问题
+
+**改进后：**
+- 诊断问题根源（策略、因子、风险、数据）
+- 修复根本问题（优化因子、调整策略、加强风控、更新数据）
+- 自动化闭环（审核→诊断→修复→重新审核）
+
+### 文档更新
+
+- ✅ 更新README.md，添加LLM审核与根本问题修复章节
+- ✅ 更新CHANGELOG.md，添加v6.5.2版本更新内容
+- ✅ 更新a-stock-quant-auto-ops技能（v1.4 → v1.5）
+- ✅ 创建工作流改进总结文档
+
+### 测试验证
+
+**验证矩阵：**
+| 验证项 | 状态 | 说明 |
+|--------|------|------|
+| LLM审核 | ✅ PASS | 成功审核报告是否满足交易要求 |
+| 问题根源诊断 | ✅ PASS | 成功诊断问题根源（策略、因子、风险、数据） |
+| 根本问题修复 | ✅ PASS | 成功修复根本问题 |
+| 完整工作流 | ✅ PASS | 工作流运行成功 |
+| 配置文件管理 | ✅ PASS | 成功管理因子、策略、风险控制配置 |
+
+---
+
 ## v6.5.1 (2026-04-16)
 
 ### 新增功能
@@ -104,12 +248,12 @@ python -m core.rdagent_integration.auto_scheduler --daemon
 
 ## 计划功能
 
-### v6.5.2 (计划中)
+### v6.5.4 (计划中)
 
-- [ ] 因子自动验证和导入
-- [ ] 智能因子组合推荐
-- [ ] 市场环境自适应搜索
-- [ ] 多语言论文支持
+- [ ] 自动化运维闭环
+- [ ] 参数自动调优
+- [ ] 因子自动挖掘
+- [ ] 策略自动升级
 
 ### v6.6.0 (计划中)
 

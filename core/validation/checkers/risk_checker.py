@@ -33,8 +33,12 @@ class RiskLayerChecker(BaseLayerChecker):
         ))
         
         # H2: 行业集中度 <= 30%
+        industry_concentration = self._check_industry_concentration(weights, context)
+        within_industry = industry_concentration <= 0.30
         results.append(self._create_check_result(
-            "H2", "行业集中度", RequirementType.HARD, True, "通过", "<= 30%", "行业集中度检查通过"
+            "H2", "行业集中度", RequirementType.HARD,
+            within_industry, industry_concentration, "<= 0.30",
+            f"行业集中度: {industry_concentration:.2%}"
         ))
         
         # H3: 总仓位上限 <= 95%
@@ -67,3 +71,60 @@ class RiskLayerChecker(BaseLayerChecker):
             ))
         
         return self._create_result(results)
+
+    def _check_industry_concentration(
+        self,
+        weights: Dict[str, float],
+        context: Dict[str, Any]
+    ) -> float:
+        """
+        检查行业集中度
+
+        Args:
+            weights: 股票权重字典 {股票代码: 权重}
+            context: 上下文信息
+
+        Returns:
+            最大行业集中度
+        """
+        try:
+            import pandas as pd
+            import os
+
+            # 读取股票列表（包含行业信息）
+            stock_list_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                'data', 'a_share_stock_list.parquet'
+            )
+
+            if not os.path.exists(stock_list_path):
+                print(f"股票列表文件不存在: {stock_list_path}")
+                return 0.0
+
+            stock_list = pd.read_parquet(stock_list_path)
+
+            # 创建股票代码到行业的映射
+            stock_to_industry = dict(zip(
+                stock_list['code'].astype(str),
+                stock_list.get('industry', '未知')
+            ))
+
+            # 计算每个行业的权重
+            industry_weights = {}
+            for stock_code, weight in weights.items():
+                stock_code_str = str(stock_code)
+                industry = stock_to_industry.get(stock_code_str, '未知')
+                industry_weights[industry] = industry_weights.get(industry, 0) + weight
+
+            # 找到最大行业集中度
+            if industry_weights:
+                max_concentration = max(industry_weights.values())
+                print(f"行业权重分布: {industry_weights}")
+                print(f"最大行业集中度: {max_concentration:.2%}")
+                return max_concentration
+            else:
+                return 0.0
+
+        except Exception as e:
+            print(f"计算行业集中度失败: {e}")
+            return 0.0

@@ -1942,8 +1942,8 @@ class StrategyBacktestValidator:
                     error_message="数据路径不存在",
                     validation_date=datetime.now().strftime('%Y-%m-%d')
                 )
-            
-            stock_files = list(stocks_path.glob("*.parquet"))[:100]
+
+            stock_files = list(stocks_path.glob("*.parquet"))  # 移除股票数量限制
             
             if not stock_files:
                 return BacktestValidationResult(

@@ -1,4 +1,0 @@
-# 机器学习依赖
-lightgbm>=4.0.0
-xgboost>=2.0.0
-torch>=2.0.0

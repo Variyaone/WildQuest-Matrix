@@ -1,9 +1,0 @@
-{
-  "symbol": "BTC-USDT",
-  "current_price": 95000.00,
-  "grid_count": 10,
-  "price_range_percent": 10,
-  "total_capital": 10000.0,
-  "grid_type": "arithmetic",
-  "note": "网格交易策略配置示例\n- symbol: 交易对\n- current_price: 当前价格（用于初始化价格区间）\n- grid_count: 网格数量\n- price_range_percent: 价格区间百分比（±10%）\n- total_capital: 总资金（USDT）\n- grid_type: 网格类型（arithmetic等差 / geometric等比）"
-}

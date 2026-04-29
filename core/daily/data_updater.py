@@ -475,8 +475,8 @@ class DailyDataUpdater:
         success_count = 0
         failed_count = 0
         total_rows = 0
-        
-        for stock_code in stock_codes[:100]:  # 限制数量避免API限制
+
+        for stock_code in stock_codes:  # 移除数量限制（原限制：避免API限制）
             try:
                 df = self.fetcher.get_fundamental(stock_codes=[stock_code])
                 

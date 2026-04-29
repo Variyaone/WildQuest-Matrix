@@ -1,5 +1,0 @@
-{
-  "webhook_url": "${FEISHU_WEBHOOK_URL}",
-  "secret": "${FEISHU_SECRET}",
-  "enabled": true
-}

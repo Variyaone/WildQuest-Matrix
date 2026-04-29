@@ -77,6 +77,19 @@ class TradingCalendar:
         date(2025, 10, 8),
     }
     
+    A_SHARE_HOLIDAYS_2026 = {
+        date(2026, 1, 1), date(2026, 1, 28), date(2026, 1, 29),
+        date(2026, 1, 30), date(2026, 1, 31), date(2026, 2, 1),
+        date(2026, 2, 2), date(2026, 2, 3), date(2026, 2, 4),
+        date(2026, 4, 4), date(2026, 4, 5), date(2026, 4, 6),
+        date(2026, 5, 1), date(2026, 5, 2), date(2026, 5, 3),
+        date(2026, 5, 4), date(2026, 5, 5), date(2026, 5, 31),
+        date(2026, 6, 1), date(2026, 6, 2), date(2026, 10, 1),
+        date(2026, 10, 2), date(2026, 10, 3), date(2026, 10, 4),
+        date(2026, 10, 5), date(2026, 10, 6), date(2026, 10, 7),
+        date(2026, 10, 8),
+    }
+    
     def __init__(
         self,
         market: MarketType = MarketType.A_SHARE,
@@ -125,6 +138,7 @@ class TradingCalendar:
         self._holidays = (
             self.A_SHARE_HOLIDAYS_2024 | 
             self.A_SHARE_HOLIDAYS_2025 |
+            self.A_SHARE_HOLIDAYS_2026 |
             self._custom_holidays
         )
         
@@ -141,7 +155,13 @@ class TradingCalendar:
             bool: 是否为交易日
         """
         if self._use_exchange_calendars:
-            return self._ec_calendar.is_session(dt)
+            try:
+                return self._ec_calendar.is_session(dt)
+            except Exception as e:
+                # 如果exchange_calendars日期越界，回退到内置日历
+                logger.warning(f"exchange_calendars日期检查失败: {e}，回退到内置日历")
+                self._use_exchange_calendars = False
+                self._init_builtin_calendar()
         
         if dt in self._trading_days:
             return True
@@ -245,8 +265,14 @@ class TradingCalendar:
             List[date]: 交易日列表
         """
         if self._use_exchange_calendars:
-            sessions = self._ec_calendar.sessions_in_range(start, end)
-            return [s.date() for s in sessions]
+            try:
+                sessions = self._ec_calendar.sessions_in_range(start, end)
+                return [s.date() for s in sessions]
+            except Exception as e:
+                # 如果exchange_calendars日期越界，回退到内置日历
+                logger.warning(f"exchange_calendars日期范围检查失败: {e}，回退到内置日历")
+                self._use_exchange_calendars = False
+                self._init_builtin_calendar()
         
         trading_days = []
         current = start

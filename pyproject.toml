@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wildquest-matrix"
-version = "6.5.0"
+version = "6.5.3"
 description = "WildQuest Matrix - A股量化投顾系统，数据驱动的智能投资决策平台"
 readme = "README.md"
 license = {text = "MIT"}

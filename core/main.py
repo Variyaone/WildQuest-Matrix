@@ -9314,9 +9314,9 @@ def cmd_signal_validate():
         return
     
     end_date = datetime.now().strftime("%Y-%m-%d")
-    start_date = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
-    
-    sample_stocks = stocks[:200] if len(stocks) > 200 else stocks
+    start_date = (datetime.now() - timedelta(days=365*5)).strftime("%Y-%m-%d")  # 回测5年
+
+    sample_stocks = stocks  # 移除股票数量限制
     
     print("验证选项:")
     print("  [1] 验证所有信号")
@@ -9343,7 +9343,7 @@ def cmd_signal_validate():
             try:
                 all_returns = []
                 
-                for stock_code in sample_stocks[:50]:
+                for stock_code in sample_stocks:  # 移除股票数量限制
                     try:
                         df = storage.stock_storage.load_stock_data(
                             stock_code, "daily", start_date, end_date
@@ -9818,7 +9818,7 @@ def cmd_signal_backtest():
             
             import gc
             all_returns = []
-            sample_stocks = stocks[:200] if len(stocks) > 200 else stocks
+            sample_stocks = stocks  # 移除股票数量限制
             batch_size = 50
             
             print("\n加载股票数据...")
@@ -16256,7 +16256,7 @@ def _cmd_strategy_backtest():
             return
         
         all_price_data = []
-        for stock_code in stocks[:500]:
+        for stock_code in stocks:  # 移除股票数量限制
             try:
                 df = storage.load_stock_data(stock_code, "daily", start_date, end_date)
                 if df is not None and len(df) >= 20 and 'close' in df.columns:
@@ -16277,7 +16277,7 @@ def _cmd_strategy_backtest():
         
         factor_data = {}
         if selected_strategy.factor_config and selected_strategy.factor_config.factor_ids:
-            for factor_id in selected_strategy.factor_config.factor_ids[:3]:
+            for factor_id in selected_strategy.factor_config.factor_ids:  # 移除因子数量限制
                 if factor_id not in factor_data:
                     factor_data[factor_id] = price_data[['date', 'stock_code', 'close']].copy()
         
